@@ -1,73 +1,1138 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lilac Flashcards App</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f7f3fb;
-      color: #333;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      height: 100vh;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      color: #7e57c2;
-    }
-    .card {
-      background: white;
-      border-radius: 16px;
-      padding: 30px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      max-width: 600px;
-      width: 100%;
-      text-align: center;
-      margin: 20px 0;
-    }
-    .buttons {
-      display: flex;
-      justify-content: space-around;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    button {
-      background: #9575cd;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-    button:hover {
-      background: #7e57c2;
-    }
-    #start-btn {
-      margin-top: 40px;
-    }
-    .hidden {
-      display: none;
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Range Helper – Image Overlay</title>
+<style>
+:root { --bg:#0b1220; --panel:#0f172a; --ink:#e5e7eb; --muted:#a3b2c7; --accent:#38bdf8; }
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#0a0f1a,#070d15);color:var(--ink);font:15px/1.4 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1100px;margin:24px auto;padding:0 16px}
+h1{font-size:26px;margin:0 0 12px}
+.flex{display:flex;gap:14px;align-items:stretch;flex-wrap:wrap}
+.card{background:var(--panel);border:1px solid #1d2737;border-radius:16px;padding:12px 12px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.left{flex:1 1 560px;min-width:300px}
+.right{flex:1 1 360px;min-width:280px}
+label{font-weight:600;color:var(--muted);font-size:13px}
+input,select,button{width:100%;padding:10px 12px;border-radius:12px;border:1px solid #223045;background:#0a1422;color:var(--ink)}
+input:focus,select:focus{outline:2px solid var(--accent);border-color:transparent}
+.row{margin-top:8px}
+.row-inline{display:flex;gap:8px}
+.btn{cursor:pointer;font-weight:700;background:linear-gradient(180deg,#0ea5e9,#0284c7);border:none}
+.btn:active{transform:translateY(1px)}
+.muted{color:var(--muted);font-size:12px}
+.hr{height:1px;background:#1f2b3e;margin:10px 0}
+canvas{display:block;width:100%;height:auto;background:#000;border-radius:14px;border:1px solid #1f2b3e;touch-action:none}
+
+.legend{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dot{width:10px;height:10px;border-radius:50%}
+.pill{display:inline-block;padding:.2rem .55rem;border-radius:999px;background:#0b1320;border:1px solid #243144;font-size:12px}
+.ok{background:#08331f;border-color:#0f5132;color:#8ff0b3}
+.warn{background:#331f08;border-color:#7a4d1b;color:#ffcf8b}
+.err{background:#3a0a10;border-color:#7a1b28;color:#ffc0ca}
+.grid{display:grid;gap:8px;grid-template-columns:1fr}
+@media (min-width:720px){ .grid{grid-template-columns:1fr 1fr} }
+  /* Scorecard */
+.scorecard h2{margin:0 0 8px;font-size:16px}
+.scorecard table{width:100%;border-collapse:collapse;font-size:13px}
+.scorecard th,.scorecard td{border:1px solid #243144;padding:6px 8px;text-align:center}
+.scorecard th{background:#0b1320;color:#cbd5e1;font-weight:700}
+.scorecard .subhead th{background:#0a1422;color:#a3b2c7}
+.scorecard input[type="number"]{
+  width:58px;padding:6px 8px;border-radius:10px;border:1px solid #223045;background:#0a1422;color:var(--ink);
+  text-align:center;font-size:13px
+}
+.scorecard .totals td{font-weight:700;background:#0b1320}
+.scorecard .pill-mini{display:inline-block;padding:2px 8px;border:1px solid #243144;border-radius:999px;font-size:12px}
+.scorecard .ok{color:#8ff0b3;border-color:#0f5132}
+.scorecard .bad{color:#ffc0ca;border-color:#7a1b28}
+
+</style>
 </head>
 <body>
-  <h1>Flashcards (Lilac SRS)</h1>
-  <div id="card" class="card hidden">
-    <div id="card-text">Click Start to begin</div>
+<div class="wrap">
+  <h1>Range Helper – Overlay on Course Image</h1>
+
+  <div class="flex">
+    <!-- Canvas/Image side -->
+    <div class="left card">
+      <div class="row">
+        <label>Upload course/holes image (PNG/JPG)</label>
+        <input id="imgInput" type="file" accept="image/*">
+        <div class="muted">Tip: crop around a single hole for best scale/clarity.</div>
+      </div>
+
+      <div class="row legend">
+        <span class="pill">Click to set: <b id="clickStatus">TEE</b> → <b>PIN</b> → <b>TARGET LINE</b></span>
+
+        <span class="pill">Right-of-line points draw “downward” on the image.</span>
+      </div>
+
+      <div class="row">
+        <canvas id="cv" width="1024" height="640" title="Click to place Tee then Pin"></canvas>
+      </div>
+
+      <div class="row legend">
+        <div class="dot" style="background:#22c55e"></div><span class="muted">Tee</span>
+        <div class="dot" style="background:#f59e0b"></div><span class="muted">Pin</span>
+        <div class="dot" style="background:#ef4444"></div><span class="muted">Landing</span>
+        <div class="dot" style="background:#38bdf8"></div><span class="muted">Perp “Right” axis</span>
+      </div>
+
+      <div class="row row-inline">
+        <button class="btn" id="undoBtn" style="flex:1" type="button">Undo last shot</button>
+        <button class="btn" id="clearBtn" style="flex:1;background:linear-gradient(180deg,#ef4444,#b91c1c)" type="button">Clear all</button>
+      </div>
+    </div>
+
+    <!-- Controls/result side -->
+    <div class="right card">
+      <div class="grid">
+        <div class="row">
+          <!-- Course/holes (auto-load) -->
+<div class="row">
+  <label>Course</label>
+  <select id="courseSelect">
+    <option value="">— Choose course (optional) —</option>
+  </select>
+</div>
+
+<div class="row row-inline">
+  <div class="muted" id="holeLabel" style="flex:1">Hole — / —</div>
+  <button class="btn" id="nextHoleBtn" type="button" style="flex:1">Next Hole ▶</button>
+</div>
+
+          <label>Hole / Target distance (yards)</label>
+          <input id="holeYards" type="number" value="350" min="1" step="1">
+        </div>
+        <div class="row">
+          <label>Total shot distance (yards)</label>
+          <input id="totalYards" type="number" placeholder="e.g. 265" min="1" step="0.1">
+        </div>
+        <div class="row">
+  <label>Club used</label>
+  <div class="row-inline">
+    <select id="clubSelect" style="flex:1">
+      <option value="">Select club (optional)</option>
+      <option value="Driver">Driver</option>
+      <option value="3W">3 Wood</option>
+      <option value="5W">5 Wood</option>
+      <option value="7W">7 Wood</option>
+      <option value="9W">9 Wood</option>
+      <option value="3H">3 Hybrid</option>
+      <option value="4H">4 Hybrid</option>
+      <option value="5H">5 Hybrid</option>
+      <option value="4I">4 Iron</option>
+      <option value="5I">5 Iron</option>
+      <option value="6I">6 Iron</option>
+      <option value="7I">7 Iron</option>
+      <option value="8I">8 Iron</option>
+      <option value="9I">9 Iron</option>
+      <option value="PW">Pitching Wedge</option>
+      <option value="AW">Gap Wedge</option>
+      <option value="SW">Sand Wedge</option>
+      <option value="LW">Lob Wedge</option>
+    </select>
+    <span class="muted" style="align-self:center;white-space:nowrap;">)</span>
   </div>
-  <div class="buttons hidden" id="rating-buttons">
-    <button onclick="rateCard(1)">Again</button>
-    <button onclick="rateCard(2)">Hard</button>
-    <button onclick="rateCard(3)">Good</button>
-    <button onclick="rateCard(4)">Easy</button>
+
+  <!-- Keep the original angle inputs hidden so existing math/code keeps working -->
+  <div style="display:none">
+    <input id="angleDeg" type="number" step="0.1" value="">
+    <select id="angleSide">
+      <option value="R" selected>Right (+)</option>
+      <option value="L">Left (−)</option>
+    </select>
   </div>
-  <button id="start-btn" onclick="startReview()">Start</button>
-  <script src="script.js"></script>
+</div>
+
+        <div class="row">
+          <label>Finished lateral from target line (meters)</label>
+          <div class="row-inline">
+            <input id="finishLatM" type="number" step="0.1" placeholder="e.g. 18" style="flex:2">
+            <select id="finishSide" style="flex:1">
+              <option value="R">Right</option>
+              <option value="L">Left</option>
+            </select>
+          </div>
+          <div class="muted">If set, this overrides the angle for drawing.</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <button class="btn" id="calcBtn" type="button">Plot Shot on Image</button>
+      </div>
+
+      <div class="hr"></div>
+     <div id="out"></div>
+<div class="hr"></div>
+<div id="shotList"></div>
+
+    </div>
+  </div>
+
+  <!-- Scorecard full-width under the two panels -->
+  <div id="scorecard" class="card" style="margin-top:14px"></div>
+
+
+  <p class="muted" style="margin-top:10px">
+  
+  </p>
+</div>
+
+<script>
+(function(){
+  // ---------- helpers ----------
+  const yd2m = 0.9144, m2yd = 1/yd2m;
+  const $ = (id)=>document.getElementById(id);
+  const fmt = (n,d=1)=>Number.isFinite(n)?n.toFixed(d):'—';
+  const out = $('out');
+// ---------------- Course loader (auto image + distance + next-hole) ----------------
+
+// Example data. Replace these image URLs and distances with your real ones.
+// Use same-origin images (or enable CORS) for best results.
+const COURSE_DB = {
+  "Demo Park (Front 9)": [
+    { hole: 1,  par: 4, yards: 350, imageUrl: "https://picsum.photos/seed/h1/1200/800" },
+    { hole: 2,  par: 3, yards: 165, imageUrl: "https://picsum.photos/seed/h2/1200/800" },
+    { hole: 3,  par: 5, yards: 515, imageUrl: "https://picsum.photos/seed/h3/1200/800" },
+    { hole: 4,  par: 4, yards: 410, imageUrl: "https://picsum.photos/seed/h4/1200/800" },
+    { hole: 5,  par: 4, yards: 360, imageUrl: "https://picsum.photos/seed/h5/1200/800" },
+    { hole: 6,  par: 3, yards: 185, imageUrl: "https://picsum.photos/seed/h6/1200/800" },
+    { hole: 7,  par: 4, yards: 430, imageUrl: "https://picsum.photos/seed/h7/1200/800" },
+    { hole: 8,  par: 5, yards: 525, imageUrl: "https://picsum.photos/seed/h8/1200/800" },
+    { hole: 9,  par: 4, yards: 375, imageUrl: "https://picsum.photos/seed/h9/1200/800" }
+  ],
+  "Demo Park (Back 9)": [
+    { hole: 10, par: 4, yards: 385, imageUrl: "https://picsum.photos/seed/h10/1200/800" },
+    { hole: 11, par: 4, yards: 405, imageUrl: "https://picsum.photos/seed/h11/1200/800" },
+    { hole: 12, par: 3, yards: 170, imageUrl: "https://picsum.photos/seed/h12/1200/800" },
+    { hole: 13, par: 5, yards: 540, imageUrl: "https://picsum.photos/seed/h13/1200/800" },
+    { hole: 14, par: 4, yards: 360, imageUrl: "https://picsum.photos/seed/h14/1200/800" },
+    { hole: 15, par: 4, yards: 420, imageUrl: "https://picsum.photos/seed/h15/1200/800" },
+    { hole: 16, par: 3, yards: 190, imageUrl: "https://picsum.photos/seed/h16/1200/800" },
+    { hole: 17, par: 5, yards: 535, imageUrl: "https://picsum.photos/seed/h17/1200/800" },
+    { hole: 18, par: 4, yards: 445, imageUrl: "https://picsum.photos/seed/h18/1200/800" }
+  ]
+};
+
+// Simple app state persisted to localStorage so refresh keeps your place
+const AppState = {
+  course: localStorage.getItem('rh_course') || "",
+  holeIndex: +(localStorage.getItem('rh_holeIndex') || 0) // 0-based within selected course array
+};
+
+const courseSel   = $('courseSelect');
+const nextHoleBtn = $('nextHoleBtn');
+const holeLabel   = $('holeLabel');
+
+// Build the dropdown
+(function populateCourseDropdown(){
+  if(!courseSel) return;
+  for(const name of Object.keys(COURSE_DB)){
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    courseSel.appendChild(opt);
+  }
+  // restore previous selection if any
+  if(AppState.course){
+    courseSel.value = AppState.course;
+  }
+})();
+
+// Helper: load an image by URL as HTMLImageElement
+function loadImageByUrl(url){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    // Set crossOrigin when loading from another domain (requires server to allow CORS)
+    img.crossOrigin = 'anonymous';
+    img.onload = ()=>resolve(img);
+    img.onerror = ()=>reject(new Error('Image failed to load'));
+    img.src = url;
+  });
+}
+
+// Apply hole data to UI + canvas
+async function loadHoleFromState(){
+  if(!AppState.course || !COURSE_DB[AppState.course]) {
+    holeLabel && (holeLabel.textContent = 'Hole — / —');
+    return; // no course selected
+  }
+
+  const holes = COURSE_DB[AppState.course];
+  // Clamp index
+  if(AppState.holeIndex < 0) AppState.holeIndex = 0;
+  if(AppState.holeIndex >= holes.length) AppState.holeIndex = holes.length - 1;
+
+  const hole = holes[AppState.holeIndex];
+  // Update label
+  holeLabel && (holeLabel.textContent = `Hole ${hole.hole} (${AppState.holeIndex+1}/${holes.length})`);
+
+  // Prepopulate target distance
+  const holeInput = $('holeYards');
+  if(holeInput) holeInput.value = hole.yards;
+
+  // Reset shot state (same as Clear)
+  shots.length = 0;
+  tee = null; pin = null; target = null;
+  clickStatus && (clickStatus.textContent = 'TEE');
+  clearOut && clearOut();
+  renderShotList && renderShotList();
+
+  // Load and fit the image (re-using your sizing logic)
+  try{
+    const img = await loadImageByUrl(hole.imageUrl);
+    baseImg = img;
+
+    // Fit canvas to image (same sizing as your upload)
+    const maxW = 1024, maxH = 768;
+    const w = img.width, h = img.height;
+    const scale = Math.min(maxW/w, maxH/h, 1);
+    cv.width  = Math.round(w*scale);
+    cv.height = Math.round(h*scale);
+
+    // Reset view transform if you use zoom/pan
+    if(typeof view !== 'undefined'){ view.scale = 1; view.tx = 0; view.ty = 0; }
+
+    redraw && redraw();
+  }catch(err){
+    line && line('Could not load hole image. You can still use the Upload image button.', 'warn');
+  }
+
+  // Persist
+  localStorage.setItem('rh_course', AppState.course);
+  localStorage.setItem('rh_holeIndex', String(AppState.holeIndex));
+}
+
+// Respond to course change
+courseSel && courseSel.addEventListener('change', ()=>{
+  AppState.course = courseSel.value;
+  AppState.holeIndex = 0; // start at first hole for that course
+  loadHoleFromState();
+});
+
+// Next Hole button
+nextHoleBtn && nextHoleBtn.addEventListener('click', ()=>{
+  if(!AppState.course || !COURSE_DB[AppState.course]) return;
+  const holes = COURSE_DB[AppState.course];
+  // advance (wrap to start if at end)
+  AppState.holeIndex = (AppState.holeIndex + 1) % holes.length;
+  loadHoleFromState();
+});
+
+// If a course was already selected from a previous session, auto-load it
+if(AppState.course){
+  loadHoleFromState();
+}
+
+  function line(html, cls){
+    const p=document.createElement('div');
+    if(cls) p.className = cls;
+    p.innerHTML=html;
+    out.appendChild(p);
+  }
+  function clearOut(){ out.innerHTML=''; }
+function renderShotList(){
+  const wrap = $('shotList');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+
+  shots.forEach((s,i)=>{
+    const lrText = `${fmt(Math.abs(s.leftRightYd||0),1)} yd ${s.leftRightYd<0?'Left':s.leftRightYd>0?'Right':'(online)'}`;
+    const slText = s.shortLongYd>=0
+      ? `${fmt(s.shortLongYd,1)} yd short`
+      : `${fmt(-s.shortLongYd,1)} yd long`;
+    const clubColor = getClubGroupColor(s.club) || '#a3b2c7';
+    const clubTag = s.club ? `<span class="pill" style="margin-left:6px;border-color:${clubColor};color:${clubColor}">${s.club}</span>` : '';
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.padding = '8px 10px';
+    card.style.marginBottom = '8px';
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div><b>#${i+1}</b> ${clubTag}</div>
+        <button class="btn delShot" data-idx="${i}" type="button"
+          style="padding:6px 10px;border-radius:8px;font-size:12px;background:linear-gradient(180deg,#ef4444,#b91c1c)">
+          Delete
+        </button>
+      </div>
+      <div class="muted" style="margin-top:6px">
+        Total: <b>${fmt(s.totalYards||0,1)} yd</b>
+        &nbsp;|&nbsp;
+        To pin: <b style="color:${(s.distToPinYd||0)<=10?'#22c55e':'#ef4444'}">${fmt(s.distToPinYd||0,1)} yd</b>
+      </div>
+      <div class="muted">
+        Short/Long: <b>${slText}</b>
+        &nbsp;|&nbsp;
+        Left/Right: <b>${lrText}</b>
+      </div>
+    `;
+    wrap.appendChild(card);
+  });
+
+  // Event delegation for per-shot delete
+  wrap.onclick = (e)=>{
+    const btn = e.target.closest('.delShot');
+    if(!btn) return;
+    const idx = parseInt(btn.dataset.idx,10);
+    if(Number.isInteger(idx)){
+      shots.splice(idx,1);
+      redraw();
+      renderShotList();
+    }
+  };
+}
+
+
+// ---------------- Scorecard ----------------
+const score = Array.from({length:18},()=>({par:4, strokes:''}));
+
+function renderScorecard(){
+  const el = $('scorecard');
+  if(!el) return;
+
+  const holesHeader = (start)=>Array.from({length:9},(_,i)=>`<th>${start+i}</th>`).join('');
+  const holesInputs = (field, start)=>Array.from({length:9},(_,i)=>{
+    const idx = start-1+i;
+    const val = score[idx][field];
+    return `<td><input type="number" inputmode="numeric" pattern="[0-9]*"
+              data-idx="${idx}" data-field="${field}" value="${val === '' ? '' : val}" min="0" step="1"></td>`;
+  }).join('');
+
+   // --- compute totals using only PLAYED holes (strokes > 0) ---
+  // A hole is "played" if strokes > 0 (empty or 0 = not played)
+  const played = score.map(s => Number.isFinite(+s.strokes) && +s.strokes > 0);
+
+  function sumRange(arr, start, count, field, onlyPlayed = false) {
+    let t = 0;
+    for (let i = 0; i < count; i++) {
+      const idx = start + i;
+      if (onlyPlayed && !played[idx]) continue;
+      const v = +arr[idx][field];
+      if (Number.isFinite(v) && (field === 'strokes' ? v > 0 : true)) t += v;
+    }
+    return t;
+  }
+
+  // Pars: sum ONLY for holes that have strokes entered
+  const parOut   = sumRange(score, 0, 9, 'par', true);
+  const parIn    = sumRange(score, 9, 9, 'par', true);
+  const parTotal = parOut + parIn;
+
+  // Strokes: sum only played holes
+  const stOut    = sumRange(score, 0, 9, 'strokes', true);
+  const stIn     = sumRange(score, 9, 9, 'strokes', true);
+  const stTotal  = stOut + stIn;
+
+  // To-par relative to the holes you've actually played
+  const toPar    = stTotal > 0 ? (stTotal - parTotal) : 0;
+  const toParCls = toPar <= 0 ? 'ok' : 'bad';
+  const toParTxt = toPar === 0 ? 'E' : (toPar > 0 ? `+${toPar}` : `${toPar}`);
+
+
+  el.innerHTML = `
+    <div class="scorecard">
+      <h2>Scorecard <span class="pill-mini ${toParCls}" title="To Par overall">${toParTxt}</span></h2>
+      <table>
+        <tr class="subhead"><th></th>${holesHeader(1)}<th>Out</th></tr>
+        <tr><th>Par</th>${holesInputs('par',1)}<td>${parOut}</td></tr>
+        <tr><th>Strokes</th>${holesInputs('strokes',1)}<td>${stOut||''}</td></tr>
+
+        <tr class="subhead"><th></th>${holesHeader(10)}<th>In</th></tr>
+        <tr><th>Par</th>${holesInputs('par',10)}<td>${parIn}</td></tr>
+        <tr><th>Strokes</th>${holesInputs('strokes',10)}<td>${stIn||''}</td></tr>
+
+        <tr class="totals"><td><b>Total</b></td>
+          <td colspan="9">${parOut + (stOut?` / ${stOut}`:'')}</td>
+          <td colspan="9">${parIn + (stIn?` / ${stIn}`:'')}</td>
+        </tr>
+        <tr class="totals"><td><b>Grand</b></td>
+          <td colspan="18">Par ${parTotal}${stTotal?` / Strokes ${stTotal} (${toParTxt})`:''}</td>
+        </tr>
+      </table>
+      <div class="row row-inline" style="margin-top:8px">
+        <button class="btn" id="resetScore" type="button" style="flex:1;background:linear-gradient(180deg,#ef4444,#b91c1c)">Clear scorecard</button>
+        <button class="btn" id="exportScore" type="button" style="flex:1">Export CSV</button>
+      </div>
+    </div>
+  `;
+
+  // Delegate input changes
+  el.querySelectorAll('input[data-idx]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const idx = +inp.dataset.idx;
+      const field = inp.dataset.field;
+      const v = inp.value === '' ? '' : Math.max(0, Math.floor(+inp.value||0));
+      score[idx][field] = v;
+      renderScorecard();
+    });
+  });
+
+  // Clear
+  const resetBtn = $('resetScore');
+  if(resetBtn){
+    resetBtn.onclick = ()=>{
+      for(let i=0;i<18;i++){ score[i].par = 4; score[i].strokes=''; }
+      renderScorecard();
+    };
+  }
+
+  // Export CSV
+  const exportBtn = $('exportScore');
+  if(exportBtn){
+    exportBtn.onclick = ()=>{
+      const rows = [
+        ['Hole', ...Array.from({length:18},(_,i)=>i+1)],
+        ['Par', ...score.map(s=>s.par)],
+        ['Strokes', ...score.map(s=>s.strokes || '')]
+      ];
+      const csv = rows.map(r=>r.join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'scorecard.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    };
+  }
+}
+
+// Initial render once the DOM exists
+renderScorecard();
+
+  // ---------- canvas & image ----------
+  const cv = $('cv');
+  const ctx = cv.getContext('2d');
+  const imgInput = $('imgInput');
+  const clickStatus = $('clickStatus');
+  const shots = []; // keep plotted shots for redraw/undo
+  let baseImg = null;
+  let tee = null, pin = null, target = null; // current drawing (third click = target line point)
+
+  // color cycle for shots
+  const shotColors = ['#ef4444','#f59e0b','#22c55e','#38bdf8','#a78bfa','#e879f9','#14b8a6','#fb7185'];
+  let shotIndex = 0;
+  // --- View transform (zoom/pan) ---
+const view = { scale: 1, tx: 0, ty: 0, min: 0.6, max: 4 };
+function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+function screenToCanvasPoint(clientX, clientY){
+  const rect = cv.getBoundingClientRect();
+  // screen → canvas pixels (before our transform)
+  const xS = (clientX - rect.left) * (cv.width / rect.width);
+  const yS = (clientY - rect.top)  * (cv.height/ rect.height);
+  // inverse of our transform
+  return { x: (xS - view.tx)/view.scale, y: (yS - view.ty)/view.scale };
+}
+
+  // --- Grouped colors (Driver / Woods / Irons / Wedges) ---
+const GROUP_COLORS = {
+  Driver: '#ef4444', // red
+  Wood:   '#f59e0b', // amber
+  Iron:   '#38bdf8', // sky
+  Wedge:  '#14b8a6'  // teal
+};
+// Return one of: 'Driver' | 'Wood' | 'Iron' | 'Wedge' | null
+function clubGroup(club){
+  if(!club) return null;
+  const c = club.toUpperCase();
+  if(c === 'DRIVER') return 'Driver';
+  if(/^(\d+)W$/.test(c) || /^(\d+)H$/.test(c)) return 'Wood';   // Woods + Hybrids
+  if(/^[4-9]I$/.test(c)) return 'Iron';
+  if(/^(PW|AW|SW|LW)$/.test(c)) return 'Wedge';
+  return null;
+}
+function getClubGroupColor(club){
+  const grp = clubGroup(club);
+  return grp ? GROUP_COLORS[grp] : null;
+}
+// Colorize the <option> items in the club dropdown to match group colors
+function colorizeClubOptions(){
+  const sel = $('clubSelect');
+  if(!sel) return;
+  for (const opt of sel.options) {
+    const val = opt.value;
+    if(!val) continue; // skip the placeholder
+    const col = getClubGroupColor(val);
+    // Reset any previous prefix dot
+    opt.textContent = opt.textContent.replace(/^([●◉○•]\s)?/, '');
+    if(col){
+      opt.style.color = col;          // color the option text
+      opt.textContent = '● ' + opt.textContent; // add a dot that inherits the color
+    } else {
+      opt.style.color = ''; // default color
+    }
+  }
+}
+colorizeClubOptions();
+
+// Consistent colors per club (used if a club is selected)
+const CLUB_COLORS = {
+  'Driver':'#ef4444',
+  '3W':'#fb7185',
+  '5W':'#f59e0b',
+  '7W':'#fbbf24',
+  '9W':'#fde047',
+  '3H':'#a78bfa',
+  '4H':'#c084fc',
+  '5H':'#e879f9',
+  '4I':'#22c55e',
+  '5I':'#16a34a',
+  '6I':'#10b981',
+  '7I':'#38bdf8',
+  '8I':'#0ea5e9',
+  '9I':'#0284c7',
+  'PW':'#14b8a6',
+  'AW':'#2dd4bf',
+  'SW':'#64748b',
+  'LW':'#94a3b8'
+};
+function getClubColor(club){ return CLUB_COLORS[club] || null; }
+
+  imgInput.addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const img = new Image();
+    img.onload = ()=>{
+      baseImg = img;
+      // Fit canvas to image while keeping a reasonable max size
+      const maxW = 1024, maxH = 768;
+      let w = img.width, h=img.height;
+      const scale = Math.min(maxW/w, maxH/h, 1);
+      cv.width = Math.round(w*scale);
+cv.height= Math.round(h*scale);
+// reset view on new image
+view.scale = 1; view.tx = 0; view.ty = 0;
+redraw();
+
+    };
+    img.src = URL.createObjectURL(file);
+
+    // reset markers/shots
+    tee = pin = target = null;
+shots.length = 0;
+shotIndex = 0;
+clickStatus.textContent = 'TEE';
+clearOut();
+renderShotList();
+
+
+  });
+
+  cv.addEventListener('click', (ev)=>{
+  if(!baseImg) return;
+  const {x, y} = screenToCanvasPoint(ev.clientX, ev.clientY);
+
+
+  if(!tee){
+    tee = {x,y};
+    clickStatus.textContent = 'PIN';
+  } else if(!pin){
+    pin = {x,y};
+    clickStatus.textContent = 'TARGET';
+  } else if(!target){
+    target = {x,y};
+    clickStatus.textContent = 'SET';
+  } else {
+  // If we’ve already hit at least one shot, a click sets a new TARGET for the next shot.
+  if (shots.length > 0) {
+    target = { x, y };
+    clickStatus.textContent = 'TARGET';
+  } else {
+    // Before any shots, allow moving the nearest of tee/pin/target
+    const dT = Math.hypot(x-tee.x,y-tee.y);
+    const dP = Math.hypot(x-pin.x,y-pin.y);
+    const dG = Math.hypot(x-target.x,y-target.y);
+    const min = Math.min(dT,dP,dG);
+    if(min===dT)      tee = {x,y};
+    else if(min===dP) pin = {x,y};
+    else              target = {x,y};
+  }
+}
+
+  redraw();
+});
+// --- Mobile-friendly pan & pinch (Pointer Events) ---
+let isPanning = false;
+let panStart = {sx:0, sy:0, tx:0, ty:0};
+const activePointers = new Map();
+
+cv.addEventListener('pointerdown', (e)=>{
+  cv.setPointerCapture(e.pointerId);
+  activePointers.set(e.pointerId, {sx:e.clientX, sy:e.clientY});
+  if(activePointers.size === 1){
+    // start pan
+    isPanning = true;
+    panStart = { sx: e.clientX, sy: e.clientY, tx: view.tx, ty: view.ty };
+  }
+  e.preventDefault();
+});
+
+cv.addEventListener('pointermove', (e)=>{
+  if(!activePointers.has(e.pointerId)) return;
+  activePointers.set(e.pointerId, {sx:e.clientX, sy:e.clientY});
+
+  if(activePointers.size === 1 && isPanning){
+    // single-finger drag → pan
+    const dx = e.clientX - panStart.sx;
+    const dy = e.clientY - panStart.sy;
+    view.tx = panStart.tx + dx;
+    view.ty = panStart.ty + dy;
+    redraw();
+  } else if(activePointers.size >= 2){
+    // two-finger pinch → zoom (anchor on midpoint)
+    const pts = Array.from(activePointers.values());
+    const [p1,p2] = pts;
+    const midSx = (p1.sx + p2.sx)/2;
+    const midSy = (p1.sy + p2.sy)/2;
+
+    if(!cv.__pinchStart){
+      const anchorWorld = screenToCanvasPoint(midSx, midSy);
+      cv.__pinchStart = {
+        anchorWorld,
+        startScreen:{x:midSx, y:midSy},
+        startDist: Math.hypot(p2.sx - p1.sx, p2.sy - p1.sy),
+        startScale: view.scale
+      };
+    } else {
+      const start = cv.__pinchStart;
+      const dist = Math.hypot(p2.sx - p1.sx, p2.sy - p1.sy);
+      const newScale = clamp(start.startScale * (dist / start.startDist), view.min, view.max);
+      view.scale = newScale;
+      // keep anchor world point under current midpoint
+      view.tx = midSx - start.anchorWorld.x * view.scale;
+      view.ty = midSy - start.anchorWorld.y * view.scale;
+      redraw();
+    }
+  }
+  e.preventDefault();
+});
+
+cv.addEventListener('pointerup', (e)=>{
+  activePointers.delete(e.pointerId);
+  cv.releasePointerCapture?.(e.pointerId);
+  if(activePointers.size === 0){
+    isPanning = false;
+    cv.__pinchStart = null;
+  } else if(activePointers.size === 1){
+    // switch back to pan baseline using the remaining finger
+    const [only] = Array.from(activePointers.values());
+    panStart = { sx: only.sx, sy: only.sy, tx: view.tx, ty: view.ty };
+    cv.__pinchStart = null;
+  }
+  e.preventDefault();
+});
+
+cv.addEventListener('pointercancel', ()=>{
+  activePointers.clear();
+  isPanning = false;
+  cv.__pinchStart = null;
+});
+
+
+  $('undoBtn').addEventListener('click', ()=>{
+  shots.pop();
+  redraw();
+  renderShotList();
+});
+
+
+  $('clearBtn').addEventListener('click', ()=>{
+   shots.length = 0;
+tee = null;
+pin = null;
+target = null;
+clickStatus.textContent = 'TEE';
+clearOut();
+redraw();
+renderShotList();
+
+
+  });
+
+  function redraw(){
+    // background
+ctx.setTransform(1,0,0,1,0,0);              // reset any previous transform
+ctx.clearRect(0,0,cv.width,cv.height);
+ctx.setTransform(view.scale,0,0,view.scale, view.tx, view.ty); // apply zoom/pan
+if(baseImg) ctx.drawImage(baseImg,0,0,cv.width,cv.height);
+
+
+    // target line & markers
+ // Dashed reference line: Tee → Pin (hole) + yard markers along the hole
+if(tee && pin){
+  const hole = parseFloat($('holeYards').value) || 0;
+  const teeToPinPix = Math.hypot(pin.x-tee.x, pin.y-tee.y);
+  const pxPerYard = (hole > 0) ? (teeToPinPix / hole) : 0;
+
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8,6]);
+  ctx.beginPath();
+  ctx.moveTo(tee.x, tee.y);
+  ctx.lineTo(pin.x, pin.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // yard markers along the dashed (hole) line
+  const exHole = unitVec(tee, pin);
+  drawYardMarkers(tee, exHole, pxPerYard, hole, 10, 50);
+}
+
+
+// Solid target line: START (tee or last landing) → Target (aim) + yard markers for shot distance
+if ((tee && target) || (shots.length > 0 && target)) {
+  const start = (shots.length > 0) ? shots[shots.length-1] : tee;
+
+  const hole = parseFloat($('holeYards').value) || 0;
+  const R    = parseFloat($('totalYards').value) || 0;
+  const teeToPinPix = Math.hypot(pin.x-tee.x, pin.y-tee.y);
+  const pxPerYard = (hole > 0) ? (teeToPinPix / hole) : 0;
+
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(start.x, start.y);
+  ctx.lineTo(target.x, target.y);
+  ctx.stroke();
+
+  // Yard markers along the planned shot line
+  const exAim = unitVec(start, target);
+  drawYardMarkers(start, exAim, pxPerYard, R, 10, 50);
+}
+
+    // tee/pin dots
+    if(tee)    drawDot(tee.x, tee.y, '#22c55e', 6);
+if(pin)    drawDot(pin.x, pin.y, '#f59e0b', 6);
+if(target) drawDot(target.x, target.y, '#38bdf8', 6);
+
+
+    // shots
+  // ---- Preview next shot (faint arc + ghost landing) ----
+(function previewNext(){
+  if (!tee || !pin) return;
+
+  // Start point = tee for first shot, else last landing
+  const start = (shots.length > 0) ? shots[shots.length-1] : tee;
+
+  // Need a target to preview
+  if (!target) return;
+
+  // Scale: px per yard from tee→pin vs hole yards
+  const hole = parseFloat($('holeYards').value);
+  const teeToPinPix = Math.hypot(pin.x-tee.x, pin.y-tee.y);
+  if (!Number.isFinite(hole) || hole <= 0) return;
+  const pxPerYard = teeToPinPix / hole;
+
+  // Shot length (yards)
+  const R = parseFloat($('totalYards').value);
+  if (!Number.isFinite(R) || R <= 0) return;
+
+  // Lateral input: finish lateral (m) OR angle (deg)
+  const ang = parseFloat($('angleDeg').value);
+  const angSide = $('angleSide').value;
+  const latM = parseFloat($('finishLatM').value);
+  const latSide = $('finishSide').value;
+
+  let theta = Number.isFinite(ang) ? (angSide==='L'? -ang : +ang) : NaN;
+  const rad = Number.isFinite(theta) ? theta*Math.PI/180 : NaN;
+  const y_from_angle_yd = Number.isFinite(rad) ? (R*Math.sin(rad)) : NaN;
+
+  // Default to original behavior: finish lateral overrides angle if provided
+  let y_yd;
+  if (Number.isFinite(latM)) {
+    y_yd = (latSide==='L' ? -latM : +latM) * (1/0.9144);
+  } else if (Number.isFinite(y_from_angle_yd)) {
+    y_yd = y_from_angle_yd;
+  } else {
+    return; // nothing to preview without lateral or angle
+  }
+
+  // Guard: lateral cannot exceed shot distance
+  const yAbs = Math.abs(y_yd);
+  if (yAbs > R) return;
+
+  // Basis from START toward TARGET
+  const ex = unitVec(start, target);
+  const er = { x: -ex.y, y: ex.x };
+
+  // Arc at distance R around START
+  ctx.save();
+  ctx.globalAlpha = 0.25;
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([6,6]);
+  ctx.beginPath();
+  ctx.arc(start.x, start.y, R * pxPerYard, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+
+  // Ghost landing point using the same math as calculate()
+  const x_yd = Math.sqrt(Math.max(R*R - y_yd*y_yd, 0));
+  const xPix = x_yd * pxPerYard;
+  const yPix = y_yd * pxPerYard;
+
+  const ghost = {
+    x: start.x + ex.x * xPix + er.x * yPix,
+    y: start.y + ex.y * xPix + er.y * yPix
+  };
+
+  // Ghost path + dot
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = '#a3b2c7';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath();
+  ctx.moveTo(start.x, start.y);
+  ctx.lineTo(ghost.x, ghost.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.globalAlpha = 0.6;
+  drawDot(ghost.x, ghost.y, '#a3b2c7', 5);
+  ctx.restore();
+})();
+
+// ---- Actual shots (polyline chaining) ----
+let p0 = tee; // first segment starts at tee, then chains from last landing
+for (const s of shots) {
+  if (p0) {
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(p0.x, p0.y);
+    ctx.lineTo(s.x, s.y);
+    ctx.stroke();
+  }
+  drawDot(s.x, s.y, s.color, 5);
+  p0 = s; // next segment starts where this one landed
+}
+
+
+  }
+
+  function drawDot(x,y,color='#ef4444', r=5){
+    ctx.fillStyle=color;
+    ctx.beginPath();
+    ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.35)';
+    ctx.stroke();
+  }
+
+  function drawArrow(x,y,ang,color='#38bdf8'){
+    const L = 10;
+    ctx.fillStyle=color;
+    ctx.beginPath();
+    ctx.moveTo(x,y);
+    ctx.lineTo(x - L*Math.cos(ang-0.4), y - L*Math.sin(ang-0.4));
+    ctx.lineTo(x - L*Math.cos(ang+0.4), y - L*Math.sin(ang+0.4));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function unitVec(a,b){
+    const vx = b.x - a.x, vy = b.y - a.y;
+    const m = Math.hypot(vx,vy)||1;
+    return {x:vx/m, y:vy/m};
+  }
+// Draw yard markers along a line from `start` in direction `dir` for `yardsTotal`.
+function drawYardMarkers(start, dir, pxPerYard, yardsTotal, tickEvery=10, labelEvery=50){
+  if(!Number.isFinite(pxPerYard) || pxPerYard <= 0) return;
+
+  const er = { x: -dir.y, y: dir.x }; // perpendicular for tick marks
+  ctx.font = '12px system-ui, Segoe UI, Roboto, Arial';
+  ctx.textBaseline = 'middle';
+
+  for(let yds = tickEvery; yds <= yardsTotal; yds += tickEvery){
+    const isLabel = (yds % labelEvery === 0);
+    const tickLen = isLabel ? 10 : 6;
+    const x = start.x + dir.x * (yds * pxPerYard);
+    const y = start.y + dir.y * (yds * pxPerYard);
+
+    // tick
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x - er.x*tickLen/2, y - er.y*tickLen/2);
+    ctx.lineTo(x + er.x*tickLen/2, y + er.y*tickLen/2);
+    ctx.stroke();
+
+    // label every `labelEvery`
+    if(isLabel){
+      const tx = x + er.x*14;  // offset from line
+      const ty = y + er.y*14;
+      // subtle outline for readability
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+      ctx.strokeText(`${yds} yd`, tx, ty);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillText(`${yds} yd`, tx, ty);
+    }
+  }
+}
+
+  // ---------- math & plotting ----------
+  $('calcBtn').addEventListener('click', ()=>{
+    clearOut();
+   if(!tee || !pin || !target){
+  line('Click the image to place Tee, then Pin, then Target line point.', 'err');
+  return;
+}
+const hole = parseFloat($('holeYards').value);
+// Total shot distance is the player's shot length (can be shorter or longer than hole)
+const R = parseFloat($('totalYards').value);
+
+
+    const ang = parseFloat($('angleDeg').value);
+    const angSide = $('angleSide').value;
+    const latM = parseFloat($('finishLatM').value);
+    const latSide = $('finishSide').value;
+
+    if(!Number.isFinite(hole) || !Number.isFinite(R) || R<=0){
+      line('Enter hole distance and total shot distance.', 'err');
+      return;
+    }
+
+    let theta = Number.isFinite(ang) ? (angSide==='L'? -ang : +ang) : NaN;
+    const rad = Number.isFinite(theta) ? theta*Math.PI/180 : NaN;
+    const y_from_angle_yd = Number.isFinite(rad) ? (R*Math.sin(rad)) : NaN;
+
+    // Choose final lateral
+    let y_yd, usedFinish = false;
+    if(Number.isFinite(latM)){
+      y_yd = (latSide==='L' ? -latM : +latM) * m2yd;
+      usedFinish = true;
+    } else if(Number.isFinite(y_from_angle_yd)){
+      y_yd = y_from_angle_yd;
+    } else {
+      line('Enter a launch angle or a finish lateral (meters).', 'err');
+      return;
+    }
+
+    const yAbs = Math.abs(y_yd);
+    if(yAbs > R){
+      line(`Lateral (${fmt(yAbs,1)} yd) can’t exceed total distance (${fmt(R,1)} yd).`, 'err');
+      return;
+    }
+
+    const x_yd = Math.sqrt(Math.max(R*R - y_yd*y_yd, 0));
+    const final_angle_deg = (R>0) ? (Math.asin(y_yd/R)*180/Math.PI) : 0;
+
+    // Start from tee for the first shot, otherwise from the last landing
+const start = (shots.length > 0)
+  ? { x: shots[shots.length-1].x, y: shots[shots.length-1].y }
+  : tee;
+
+// Basis from START toward the TARGET point (aim axis)
+const ex = unitVec(start, target);
+const er = { x: -ex.y, y: ex.x }; // screen-right perpendicular
+
+// Global scale: pixels per yard using tee→pin vs hole yards (constant across shots)
+const teeToPinPix = Math.hypot(pin.x-tee.x, pin.y-tee.y);
+const pxPerYard = teeToPinPix / hole;
+
+// Landing from START
+const xPix = x_yd * pxPerYard;
+const yPix = y_yd * pxPerYard;
+const land = {
+  x: start.x + ex.x * xPix + er.x * yPix,
+  y: start.y + ex.y * xPix + er.y * yPix
+};
+
+
+   // Results relative to the pin FROM CURRENT START (not always the tee)
+const exT = ex;                 // unit along target (from start)
+const erT = er;                 // right of target
+const exP = unitVec(start, pin);        // unit along start→pin
+const erP = { x: -exP.y, y: exP.x };    // right of start→pin
+
+// dot products between bases
+const d_exT_exP = exT.x*exP.x + exT.y*exP.y;
+const d_erT_exP = erT.x*exP.x + erT.y*exP.y;
+const d_exT_erP = exT.x*erP.x + exT.y*erP.y;
+const d_erT_erP = erT.x*erP.x + erT.y*erP.y;
+
+// shot components in the pin-aligned basis
+const x_along_pin_yd = x_yd * d_exT_exP + y_yd * d_erT_exP;
+const y_rel_pin_yd   = x_yd * d_exT_erP + y_yd * d_erT_erP;
+
+// remaining to pin along start→pin
+const startToPinPix = Math.hypot(pin.x - start.x, pin.y - start.y);
+const hole_remaining_yd = startToPinPix / pxPerYard;
+
+const dx_to_pin_yd = hole_remaining_yd - x_along_pin_yd; // + short, − long
+const dist_to_pin_yd = Math.hypot(dx_to_pin_yd, y_rel_pin_yd);
+
+
+
+  // Output (simplified, color-coded, and clearer)
+line('Relative to the Pin:', 'pill');
+
+// Distance color: green if ≤10 yd, red if >10 yd
+const distColor = dist_to_pin_yd <= 10 ? '#22c55e' : '#ef4444';
+
+line(
+  `<div style="
+    font-size:1.8em;
+    font-weight:800;
+    color:${distColor};
+    margin:6px 0;
+  ">
+    ${fmt(dist_to_pin_yd,1)} yd
+    <span style="font-size:0.8em;color:#a3b2c7;">
+      (${fmt(dist_to_pin_yd*yd2m,1)} m)
+    </span>
+  </div>`
+);
+
+line(
+  `Short/Long: <b>${dx_to_pin_yd>=0
+    ? fmt(dx_to_pin_yd,1)+' yd short'
+    : fmt(-dx_to_pin_yd,1)+' yd long'
+  }</b> (${fmt(Math.abs(dx_to_pin_yd)*yd2m,1)} m)`
+);
+
+line(
+  `Left/Right of pin: <b>${fmt(Math.abs(y_rel_pin_yd),1)} yd ${y_rel_pin_yd<0
+    ? 'Left' 
+    : y_rel_pin_yd>0
+    ? 'Right' 
+    : '(online)'
+  }</b> (${fmt(Math.abs(y_rel_pin_yd)*yd2m,1)} m)`
+);
+
+
+    // Store & draw shot
+const club = ($('clubSelect') && $('clubSelect').value) || '';
+const color = getClubGroupColor(club) || shotColors[shotIndex++ % shotColors.length];
+shots.push({
+
+
+
+  x: land.x,
+  y: land.y,
+  color,
+  club,
+  totalYards: R,
+  shortLongYd: dx_to_pin_yd,  // +short / −long (relative to pin)
+  leftRightYd: y_rel_pin_yd,  // +Right / −Left (relative to pin)
+  distToPinYd: dist_to_pin_yd
+});
+redraw();
+renderShotList();
+// Next shot: click anywhere to set a new target from this landing point
+clickStatus.textContent = 'TARGET';
+});
+
+// end IIFE
+})();
+
+</script>
 </body>
 </html>
