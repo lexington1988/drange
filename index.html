@@ -46,7 +46,180 @@ canvas{display:block;width:100%;height:auto;background:#000;border-radius:14px;b
 .scorecard .totals td{font-weight:700;background:#0b1320}
 .scorecard .pill-mini{display:inline-block;padding:2px 8px;border:1px solid #243144;border-radius:999px;font-size:12px}
 .scorecard .ok{color:#8ff0b3;border-color:#0f5132}
-.scorecard .bad{color:#ffc0ca;border-color:#7a1b28}
+/* Responsive: stack Course/Hole/Next Hole vertically on narrow screens */
+@media (max-width: 640px) {
+  .row-inline[style*="justify-content:space-between;"] {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+  .row-inline[style*="justify-content:space-between;"] > div,
+  .row-inline[style*="justify-content:space-between;"] > button {
+    flex: none !important;
+    width: 100% !important;
+  }
+  #nextHoleBtn {
+    margin-top: 6px;
+  }
+}
+  @media (max-width: 720px){
+  .scorecard table{
+    display:block;
+    overflow-x:auto;
+    white-space:nowrap;
+  }
+}
+.pill-mini.ok {
+  background-color: rgba(34, 197, 94, 0.15); /* soft green background */
+  color: #22c55e; /* subtle green text */
+}
+
+.pill-mini.bad {
+  background-color: rgba(239, 68, 68, 0.15); /* soft red background */
+  color: #ef4444; /* subtle red text */
+}
+/* --- Load Menu Modal --- */
+#modalBackdrop {
+  position: fixed; inset: 0; background: rgba(3,10,20,0.55);
+  display: none; align-items: center; justify-content: center; z-index: 9999;
+}
+#loadModal {
+  width: min(520px, 92vw);
+  background: var(--panel);
+  border: 1px solid #243144;
+  border-radius: 16px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.45);
+  padding: 12px;
+  color: var(--ink);
+}
+#loadModal h3 {
+  margin: 0 0 8px; font-size: 16px;
+}
+#loadList {
+  margin: 8px 0 0; padding: 0; list-style: none; max-height: 300px; overflow: auto;
+  border: 1px solid #1f2b3e; border-radius: 12px;
+}
+#loadList li + li { border-top: 1px solid #1f2b3e; }
+.loadItem {
+  width: 100%; text-align: left; background: #0a1422; border: none; color: var(--ink);
+  padding: 10px 12px; cursor: pointer; display: flex; gap: 8px; align-items: center;
+}
+.loadItem:hover { background: #0b132a; }
+.loadMeta { color: var(--muted); font-size: 12px; margin-left: auto; white-space: nowrap; }
+#modalActions { display:flex; gap:8px; margin-top:10px }
+#closeLoad, #deleteLoad {
+  flex:1; padding:10px 12px; border-radius:12px; border:1px solid #223045; background:#0a1422; color:var(--ink); cursor:pointer;
+}
+#deleteLoad { border-color:#57222a; background:#2a0f13; color:#ffc0ca }
+/* Load modal search */
+#loadSearch {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #223045;
+  background: #0a1422;
+  color: var(--ink);
+  margin: 6px 0 10px;
+}
+#loadSearch:focus { outline: 2px solid var(--accent); border-color: transparent; }
+/* --- Confirm Modal --- */
+#confirmBackdrop {
+  position: fixed; inset: 0;
+  background: rgba(3,10,20,0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+#confirmModal {
+  width: min(420px, 90vw);
+  background: var(--panel);
+  border: 1px solid #243144;
+  border-radius: 16px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.45);
+  padding: 18px;
+  color: var(--ink);
+  text-align: center;
+}
+#confirmModal p { margin: 10px 0 18px; }
+#confirmModal button {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #223045;
+  background: #0a1422;
+  color: var(--ink);
+  cursor: pointer;
+  min-width: 100px;
+}
+#confirmModal button:hover { background:#0b1629; }
+#confirmCancel { margin-right:10px; }
+#confirmOk {
+  background: linear-gradient(180deg,#ef4444,#b91c1c);
+  border-color:#5c1a1f;
+}
+/* --- Save Menu Modal --- */
+#saveBackdrop {
+  position: fixed; inset: 0; background: rgba(3,10,20,0.55);
+  display: none; align-items: center; justify-content: center; z-index: 9999;
+}
+#saveModal {
+  width: min(520px, 92vw);
+  background: var(--panel);
+  border: 1px solid #243144;
+  border-radius: 16px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.45);
+  padding: 12px;
+  color: var(--ink);
+}
+#saveModal h3 { margin: 0 0 8px; font-size: 16px; }
+#saveName {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #223045;
+  background: #0a1422;
+  color: var(--ink);
+  margin: 6px 0 10px;
+}
+#saveName:focus { outline: 2px solid var(--accent); border-color: transparent; }
+#saveActions { display:flex; gap:8px; margin-top:10px }
+#cancelSave, #confirmSave {
+  flex:1; padding:10px 12px; border-radius:12px; border:1px solid #223045; background:#0a1422; color:var(--ink); cursor:pointer;
+}
+#confirmSave { background: linear-gradient(180deg,#0ea5e9,#0284c7); border:none; font-weight:700; }
+/* --- Delete Confirm Modal --- */
+#confirmBackdrop {
+  position: fixed; inset: 0; background: rgba(3,10,20,0.55);
+  display: none; align-items: center; justify-content: center; z-index: 9999;
+}
+#confirmModal {
+  width: min(520px, 92vw);
+  background: var(--panel);
+  border: 1px solid #243144;
+  border-radius: 16px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.45);
+  padding: 12px;
+  color: var(--ink);
+}
+#confirmModal h3 { margin: 0 0 8px; font-size: 16px; }
+#confirmName {
+  display:block;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #243144;
+  background:#0a1422;
+  color: var(--ink);
+  margin: 6px 0 10px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+#confirmHint { color: #ffc0ca; font-size: 12px; margin-top: 2px; }
+#confirmActions { display:flex; gap:8px; margin-top:10px }
+#cancelDelete, #confirmDelete {
+  flex:1; padding:10px 12px; border-radius:12px; cursor:pointer;
+  border:1px solid #223045; background:#0a1422; color:var(--ink);
+}
+#confirmDelete {
+  background:#2a0f13; border-color:#57222a; color:#ffc0ca; font-weight:700;
+}
 
 </style>
 </head>
@@ -57,11 +230,33 @@ canvas{display:block;width:100%;height:auto;background:#000;border-radius:14px;b
   <div class="flex">
     <!-- Canvas/Image side -->
     <div class="left card">
-      <div class="row">
-        <label>Upload course/holes image (PNG/JPG)</label>
-        <input id="imgInput" type="file" accept="image/*">
-        <div class="muted">Tip: crop around a single hole for best scale/clarity.</div>
-      </div>
+   <!-- Course / Hole controls (tidied layout) -->
+<div class="row">
+  <div class="row-inline" style="gap:8px; align-items:flex-end; justify-content:space-between;">
+    <div style="flex:1.2">
+      <label>Course</label>
+      <select id="courseSelect" style="width:100%; height:38px; font-size:0.95em;">
+        <option value="">– Select course –</option>
+      </select>
+    </div>
+
+    <div style="flex:0.8">
+      <label>Hole</label>
+      <select id="holeSelect" disabled style="width:100%; height:38px; font-size:0.95em;">
+        <option value="">–</option>
+      </select>
+    </div>
+
+    <div style="flex:0.9; text-align:right;">
+      <button id="nextHoleBtn" class="btn" type="button"
+        style="height:38px; font-size:0.9em; padding:0 14px; white-space:nowrap;">
+        Next Hole ▶
+      </button>
+    </div>
+  </div>
+</div>
+
+
 
       <div class="row legend">
         <span class="pill">Click to set: <b id="clickStatus">TEE</b> → <b>PIN</b> → <b>TARGET LINE</b></span>
@@ -89,19 +284,12 @@ canvas{display:block;width:100%;height:auto;background:#000;border-radius:14px;b
     <!-- Controls/result side -->
     <div class="right card">
       <div class="grid">
-        <div class="row">
-          <!-- Course/holes (auto-load) -->
-<div class="row">
-  <label>Course</label>
-  <select id="courseSelect">
-    <option value="">— Choose course (optional) —</option>
-  </select>
-</div>
+       
 
-<div class="row row-inline">
-  <div class="muted" id="holeLabel" style="flex:1">Hole — / —</div>
-  <button class="btn" id="nextHoleBtn" type="button" style="flex:1">Next Hole ▶</button>
-</div>
+        <div class="row">
+     
+
+
 
           <label>Hole / Target distance (yards)</label>
           <input id="holeYards" type="number" value="350" min="1" step="1">
@@ -110,6 +298,7 @@ canvas{display:block;width:100%;height:auto;background:#000;border-radius:14px;b
           <label>Total shot distance (yards)</label>
           <input id="totalYards" type="number" placeholder="e.g. 265" min="1" step="0.1">
         </div>
+
         <div class="row">
   <label>Club used</label>
   <div class="row-inline">
@@ -188,144 +377,260 @@ canvas{display:block;width:100%;height:auto;background:#000;border-radius:14px;b
   const $ = (id)=>document.getElementById(id);
   const fmt = (n,d=1)=>Number.isFinite(n)?n.toFixed(d):'—';
   const out = $('out');
-// ---------------- Course loader (auto image + distance + next-hole) ----------------
+  // ===== CSV CONFIG =====
+const CSV_URL   = 'https://raw.githubusercontent.com/lexington1988/drange/main/Courses.csv';
+const IMAGE_BASE = 'https://raw.githubusercontent.com/lexington1988/drange/main/';
 
-// Example data. Replace these image URLs and distances with your real ones.
-// Use same-origin images (or enable CORS) for best results.
-const COURSE_DB = {
-  "Demo Park (Front 9)": [
-    { hole: 1,  par: 4, yards: 350, imageUrl: "https://picsum.photos/seed/h1/1200/800" },
-    { hole: 2,  par: 3, yards: 165, imageUrl: "https://picsum.photos/seed/h2/1200/800" },
-    { hole: 3,  par: 5, yards: 515, imageUrl: "https://picsum.photos/seed/h3/1200/800" },
-    { hole: 4,  par: 4, yards: 410, imageUrl: "https://picsum.photos/seed/h4/1200/800" },
-    { hole: 5,  par: 4, yards: 360, imageUrl: "https://picsum.photos/seed/h5/1200/800" },
-    { hole: 6,  par: 3, yards: 185, imageUrl: "https://picsum.photos/seed/h6/1200/800" },
-    { hole: 7,  par: 4, yards: 430, imageUrl: "https://picsum.photos/seed/h7/1200/800" },
-    { hole: 8,  par: 5, yards: 525, imageUrl: "https://picsum.photos/seed/h8/1200/800" },
-    { hole: 9,  par: 4, yards: 375, imageUrl: "https://picsum.photos/seed/h9/1200/800" }
-  ],
-  "Demo Park (Back 9)": [
-    { hole: 10, par: 4, yards: 385, imageUrl: "https://picsum.photos/seed/h10/1200/800" },
-    { hole: 11, par: 4, yards: 405, imageUrl: "https://picsum.photos/seed/h11/1200/800" },
-    { hole: 12, par: 3, yards: 170, imageUrl: "https://picsum.photos/seed/h12/1200/800" },
-    { hole: 13, par: 5, yards: 540, imageUrl: "https://picsum.photos/seed/h13/1200/800" },
-    { hole: 14, par: 4, yards: 360, imageUrl: "https://picsum.photos/seed/h14/1200/800" },
-    { hole: 15, par: 4, yards: 420, imageUrl: "https://picsum.photos/seed/h15/1200/800" },
-    { hole: 16, par: 3, yards: 190, imageUrl: "https://picsum.photos/seed/h16/1200/800" },
-    { hole: 17, par: 5, yards: 535, imageUrl: "https://picsum.photos/seed/h17/1200/800" },
-    { hole: 18, par: 4, yards: 445, imageUrl: "https://picsum.photos/seed/h18/1200/800" }
-  ]
-};
 
-// Simple app state persisted to localStorage so refresh keeps your place
-const AppState = {
-  course: localStorage.getItem('rh_course') || "",
-  holeIndex: +(localStorage.getItem('rh_holeIndex') || 0) // 0-based within selected course array
-};
+// Data model for all rows in the CSV:
+// [{ course:'Six Hills (Front 9)', hole:1, par:4, yards:398, image:'./six-hills/hole-01.jpg' }, ...]
+let courseRows = [];
+let currentCourse = '';
+let currentHoleIndex = 0; // index within filtered rows for the selected course
 
-const courseSel   = $('courseSelect');
-const nextHoleBtn = $('nextHoleBtn');
-const holeLabel   = $('holeLabel');
-
-// Build the dropdown
-(function populateCourseDropdown(){
-  if(!courseSel) return;
-  for(const name of Object.keys(COURSE_DB)){
-    const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = name;
-    courseSel.appendChild(opt);
-  }
-  // restore previous selection if any
-  if(AppState.course){
-    courseSel.value = AppState.course;
-  }
-})();
-
-// Helper: load an image by URL as HTMLImageElement
-function loadImageByUrl(url){
-  return new Promise((resolve, reject)=>{
-    const img = new Image();
-    // Set crossOrigin when loading from another domain (requires server to allow CORS)
-    img.crossOrigin = 'anonymous';
-    img.onload = ()=>resolve(img);
-    img.onerror = ()=>reject(new Error('Image failed to load'));
-    img.src = url;
+const courseSelect = $('courseSelect');
+const holeSelect   = $('holeSelect');
+const nextHoleBtn  = $('nextHoleBtn');
+// --- Simple CSV parser (no quoted commas in this dataset) ---
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+  if (!lines.length) return [];
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+  return lines.slice(1).map(line => {
+    const cells = line.split(',').map(c => c.trim());
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = cells[i] ?? '');
+    // normalize types
+    obj.hole  = +obj.hole || 0;
+    obj.par   = +obj.par || 0;
+    obj.yards = +obj.yards || 0;
+    return obj;
   });
 }
 
-// Apply hole data to UI + canvas
-async function loadHoleFromState(){
-  if(!AppState.course || !COURSE_DB[AppState.course]) {
-    holeLabel && (holeLabel.textContent = 'Hole — / —');
-    return; // no course selected
+// Turn possible relative image path into absolute
+
+// Return unique *base* course names (e.g., "Six Hills"), collapsing "(Front 9)"/"(Back 9)"
+function getCourseNames(rows) {
+  const seen = new Set();
+  const out = [];
+  for (const r of rows) {
+    const base = baseCourseName(r.course || '');
+    if (base && !seen.has(base)) { seen.add(base); out.push(base); }
+  }
+  return out;
+}
+
+
+function rowsForCourse(name) {
+  const base = baseCourseName(name || '');
+  const rows = courseRows
+    .filter(r => baseCourseName(r.course || '') === base)
+    .map(r => {
+      // Make a shallow copy and normalize the hole number
+      const copy = { ...r };
+      let h = Number(copy.hole) || 0;
+
+      // If CSV labels "(Back 9)" but numbers 1..9, offset to 10..18
+      if (/\(Back\s*9\)/i.test(copy.course || '') && h >= 1 && h <= 9) {
+        h = 9 + h; // 1→10 ... 9→18
+      }
+      copy.hole = h;
+      return copy;
+    })
+    .sort((a,b)=>a.hole - b.hole);
+
+  return rows;
+}
+
+function baseCourseName(name){
+  if (!name) return '';
+  return name.replace(/\s*\((Front|Back)\s*9\)\s*$/i,'').trim();
+}
+
+/**
+ * Pre-fill score[].par for the selected course, including BOTH nines.
+ * - Works whether the CSV numbers the back nine as 10–18 OR as 1–9.
+ * - If it’s 1–9 on "(Back 9)", we offset those to holes 10–18.
+ */
+  function slugifyCourseName(name){
+  return baseCourseName(name)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function resolveImagePath(row){
+  let p = (row.image || '').trim();
+  if (!p) return '';
+  if (/^https?:\/\//i.test(p)) return p; // already a full URL
+
+  // normalize leading ./ or /
+  p = p.replace(/^\.\//, '').replace(/^\/+/, '');
+
+  // If path doesn’t start with 'courses/', add it.
+  // If there’s no slash at all (just a filename), inject the course slug folder.
+  if (!/^courses\//i.test(p)) {
+    if (!p.includes('/')) {
+      const slug = slugifyCourseName(row.course || '');
+      p = `courses/${slug}/${p}`;
+    } else {
+      p = `courses/${p}`;
+    }
   }
 
-  const holes = COURSE_DB[AppState.course];
-  // Clamp index
-  if(AppState.holeIndex < 0) AppState.holeIndex = 0;
-  if(AppState.holeIndex >= holes.length) AppState.holeIndex = holes.length - 1;
+  // Build a raw.githubusercontent URL
+  return `https://raw.githubusercontent.com/lexington1988/drange/main/${p}`;
+}
 
-  const hole = holes[AppState.holeIndex];
-  // Update label
-  holeLabel && (holeLabel.textContent = `Hole ${hole.hole} (${AppState.holeIndex+1}/${holes.length})`);
+function preloadAllParsForCourse(selectedCourse){
+  // reset to a sensible default first
+  for (let i = 0; i < score.length; i++) score[i].par = 4;
 
-  // Prepopulate target distance
-  const holeInput = $('holeYards');
-  if(holeInput) holeInput.value = hole.yards;
+  const base = baseCourseName(selectedCourse);
+  const rows = courseRows
+    .filter(r => baseCourseName(r.course) === base)
+    .sort((a,b)=>a.hole - b.hole);
 
-  // Reset shot state (same as Clear)
-  shots.length = 0;
-  tee = null; pin = null; target = null;
-  clickStatus && (clickStatus.textContent = 'TEE');
-  clearOut && clearOut();
-  renderShotList && renderShotList();
+  for (const r of rows){
+    let idx = (r.hole|0) - 1;
 
-  // Load and fit the image (re-using your sizing logic)
-  try{
-    const img = await loadImageByUrl(hole.imageUrl);
+    // If the CSV splits the course and numbers back-nine as 1..9, push them to 10..18
+    if (/\(Back\s*9\)/i.test(r.course) && r.hole >= 1 && r.hole <= 9) {
+      idx = 9 + (r.hole - 1);
+    }
+
+    // If the CSV already uses 10..18, the idx above is already correct.
+
+    if (idx >= 0 && idx < score.length){
+      score[idx].par = +r.par || score[idx].par;
+    }
+  }
+  renderScorecard();
+}
+
+
+function fillCourseMenu() {
+  courseSelect.innerHTML = '<option value="">– Select course –</option>';
+  const bases = getCourseNames(courseRows); // now returns "Six Hills" (once)
+  for (const c of bases) {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    courseSelect.appendChild(opt);
+  }
+}
+
+
+function fillHoleMenu(courseName) {
+  const rows = rowsForCourse(courseName); // now returns both nines
+  holeSelect.innerHTML = '';
+  for (const r of rows) {
+    const opt = document.createElement('option');
+    opt.value = String(r.hole);
+    opt.textContent = `Hole ${r.hole}`;
+    holeSelect.appendChild(opt);
+  }
+  holeSelect.disabled = rows.length === 0;
+}
+
+
+// Load selected hole: set image, yards, and par
+function applyHoleByIndex(courseName, index) {
+  const rows = rowsForCourse(courseName);
+  if (!rows.length) return;
+
+  // clamp index
+  currentHoleIndex = Math.max(0, Math.min(index, rows.length - 1));
+  const row = rows[currentHoleIndex];
+
+  // UI selects
+  courseSelect.value = courseName;
+  holeSelect.value = String(row.hole);
+
+  // Set hole distance (yards) input
+  $('holeYards').value = row.yards || '';
+
+// --- Update par + hole label + scroll ---
+if (typeof score !== 'undefined' && Array.isArray(score)) {
+  const idx = row.hole - 1;
+  if (idx >= 0 && idx < score.length) {
+    score[idx].par = row.par || 4;
+  }
+  renderScorecard();
+}
+
+// Update hole label (for clarity on right panel)
+let holeLabel = document.getElementById('holeLabel');
+if (!holeLabel) {
+  // If label doesn’t exist yet, create it above the holeYards input
+  const labelRow = document.querySelector('label[for="holeYards"]')?.parentElement;
+  if (labelRow) {
+    holeLabel = document.createElement('div');
+    holeLabel.id = 'holeLabel';
+    holeLabel.className = 'muted';
+    holeLabel.style.marginBottom = '4px';
+    labelRow.insertBefore(holeLabel, labelRow.firstChild);
+  }
+}
+if (holeLabel) {
+  holeLabel.textContent = `Hole ${row.hole} (${row.par || '-'} par)`;
+}
+
+// Also update the yardage box correctly
+const holeYardsInput = document.getElementById('holeYards');
+if (holeYardsInput) {
+  holeYardsInput.value = row.yards || '';
+}
+
+randomizeWind(); // new wind each time a hole is applied
+
+// Scroll to top of canvas smoothly (so user always sees new hole)
+document.querySelector('canvas')?.scrollIntoView({ behavior: 'smooth' });
+
+
+  // Load the hole image onto the canvas
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
     baseImg = img;
 
-    // Fit canvas to image (same sizing as your upload)
+    // Fit canvas to image with sane max size (same as your upload flow)
     const maxW = 1024, maxH = 768;
-    const w = img.width, h = img.height;
-    const scale = Math.min(maxW/w, maxH/h, 1);
-    cv.width  = Math.round(w*scale);
-    cv.height = Math.round(h*scale);
+    let w = img.width, h = img.height;
+    const scale = Math.min(maxW / w, maxH / h, 1);
+    cv.width  = Math.round(w * scale);
+    cv.height = Math.round(h * scale);
 
-    // Reset view transform if you use zoom/pan
-    if(typeof view !== 'undefined'){ view.scale = 1; view.tx = 0; view.ty = 0; }
+    // reset view and markers/shots
+    view.scale = 1; view.tx = 0; view.ty = 0;
+    tee = pin = target = null;
+    shots.length = 0;
+    shotIndex = 0;
+    clickStatus.textContent = 'TEE';
+    clearOut();
+    renderShotList();
 
-    redraw && redraw();
-  }catch(err){
-    line && line('Could not load hole image. You can still use the Upload image button.', 'warn');
-  }
+    redraw();
+  };
+  img.onerror = () => {
+    clearOut();
+    line('Could not load hole image from CSV path.', 'err');
+  };
+  img.src = resolveImagePath(row);
 
-  // Persist
-  localStorage.setItem('rh_course', AppState.course);
-  localStorage.setItem('rh_holeIndex', String(AppState.holeIndex));
 }
 
-// Respond to course change
-courseSel && courseSel.addEventListener('change', ()=>{
-  AppState.course = courseSel.value;
-  AppState.holeIndex = 0; // start at first hole for that course
-  loadHoleFromState();
-});
-
-// Next Hole button
-nextHoleBtn && nextHoleBtn.addEventListener('click', ()=>{
-  if(!AppState.course || !COURSE_DB[AppState.course]) return;
-  const holes = COURSE_DB[AppState.course];
-  // advance (wrap to start if at end)
-  AppState.holeIndex = (AppState.holeIndex + 1) % holes.length;
-  loadHoleFromState();
-});
-
-// If a course was already selected from a previous session, auto-load it
-if(AppState.course){
-  loadHoleFromState();
+// Next hole (wraps to start of the same course)
+function goToNextHole() {
+  if (!currentCourse) return;
+  const rows = rowsForCourse(currentCourse);
+  if (!rows.length) return;
+  const nextIdx = (currentHoleIndex + 1) % rows.length;
+  applyHoleByIndex(currentCourse, nextIdx); // applyHoleByIndex will randomize wind
 }
+
+
+
 
   function line(html, cls){
     const p=document.createElement('div');
@@ -389,6 +694,377 @@ function renderShotList(){
 
 // ---------------- Scorecard ----------------
 const score = Array.from({length:18},()=>({par:4, strokes:''}));
+ // --- Local storage helpers for scorecards ---
+const LS_KEY_CURRENT = 'rh:scorecard:current';
+const LS_KEY_ALL     = 'rh:scorecards';
+
+function saveCurrentScorecard(){
+  try {
+    localStorage.setItem(LS_KEY_CURRENT, JSON.stringify(score));
+  } catch(e) { /* ignore quota errors */ }
+}
+
+function loadCurrentScorecardIfAny(){
+  try {
+    const raw = localStorage.getItem(LS_KEY_CURRENT);
+    if (!raw) return false;
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr) || arr.length !== 18) return false;
+    for (let i=0;i<18;i++){
+      const s = arr[i] || {};
+      score[i].par     = Number.isFinite(+s.par) ? +s.par : 4;
+      score[i].strokes = (s.strokes === '' ? '' : Math.max(0, Math.floor(+s.strokes||0)));
+    }
+    return true;
+  } catch(e){ return false; }
+}
+
+// Named saves to keep MULTIPLE scorecards
+function getAllSavedScorecards(){
+  try {
+    const raw = localStorage.getItem(LS_KEY_ALL);
+    const map = raw ? JSON.parse(raw) : {};
+    return (map && typeof map === 'object') ? map : {};
+  } catch { return {}; }
+}
+
+function saveNamedScorecard(name){
+  const map = getAllSavedScorecards();
+  map[name] = {
+    when: new Date().toISOString(),
+    course: currentCourse || '',
+    score: JSON.parse(JSON.stringify(score)) // deep-ish copy
+  };
+  try { localStorage.setItem(LS_KEY_ALL, JSON.stringify(map)); } catch {}
+}
+
+function loadNamedScorecard(name){
+  const map = getAllSavedScorecards();
+  const entry = map[name];
+  if (!entry || !Array.isArray(entry.score) || entry.score.length !== 18) return false;
+  for (let i=0;i<18;i++){
+    const s = entry.score[i] || {};
+    score[i].par     = Number.isFinite(+s.par) ? +s.par : 4;
+    score[i].strokes = (s.strokes === '' ? '' : Math.max(0, Math.floor(+s.strokes||0)));
+  }
+  return true;
+}
+// --- Clickable Load Menu (modal) ---
+function ensureLoadModal(){
+  if (document.getElementById('modalBackdrop')) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'modalBackdrop';
+  wrap.innerHTML = `
+    <div id="loadModal" class="card">
+      <h3>Select a saved scorecard</h3>
+      <input id="loadSearch" type="search" placeholder="Search by name or course…">
+      <ul id="loadList"></ul>
+      <div id="modalActions">
+        <button id="closeLoad">Close</button>
+        <button id="deleteLoad" title="Delete selected (asks for confirmation)">Delete</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(wrap);
+
+  // Close on backdrop click
+  wrap.addEventListener('click', (e)=>{
+    if (e.target === wrap) wrap.style.display = 'none';
+  });
+  // Close button
+  document.getElementById('closeLoad').onclick = ()=> wrap.style.display = 'none';
+
+  // Delete selected (we store selected name on #loadModal dataset)
+  document.getElementById('deleteLoad').onclick = ()=>{
+  const modal = document.getElementById('loadModal');
+  const name = modal?.dataset?.selected || '';
+  if (!name) return;
+
+  openDeleteModal(name, ()=> {
+    const map = getAllSavedScorecards();
+    delete map[name];
+    try { localStorage.setItem('rh:scorecards', JSON.stringify(map)); } catch {}
+    // refresh list
+    populateLoadList(document.getElementById('loadSearch')?.value || '');
+    // clear selected
+    modal.dataset.selected = '';
+  });
+};
+
+
+  // Search input → filter list live
+  const search = document.getElementById('loadSearch');
+  if (search){
+    search.addEventListener('input', ()=>{
+      const q = search.value || '';
+      populateLoadList(q);
+    });
+  }
+}
+// --- Custom in-app confirm modal (returns a Promise<boolean>) ---
+function confirmModal(message){
+  return new Promise(resolve=>{
+    // Build once
+    let wrap = document.getElementById('confirmBackdrop');
+    if(!wrap){
+      wrap = document.createElement('div');
+      wrap.id = 'confirmBackdrop';
+      wrap.innerHTML = `
+        <div id="confirmModal" class="card">
+          <p id="confirmMsg"></p>
+          <div>
+            <button id="confirmCancel">Cancel</button>
+            <button id="confirmOk">OK</button>
+          </div>
+        </div>`;
+      document.body.appendChild(wrap);
+    }
+    const msg = document.getElementById('confirmMsg');
+    msg.textContent = message;
+    wrap.style.display = 'flex';
+
+    const cancel = document.getElementById('confirmCancel');
+    const ok = document.getElementById('confirmOk');
+    const close = (result)=>{
+      wrap.style.display='none';
+      cancel.onclick = ok.onclick = null;
+      resolve(result);
+    };
+    cancel.onclick = ()=> close(false);
+    ok.onclick = ()=> close(true);
+  });
+}
+// --- Save Menu (modal) ---
+function ensureSaveModal(){
+  if (document.getElementById('saveBackdrop')) return;
+
+  const wrap = document.createElement('div');
+  wrap.id = 'saveBackdrop';
+  wrap.innerHTML = `
+    <div id="saveModal" class="card">
+      <h3>Save scorecard</h3>
+      <input id="saveName" type="text" placeholder="Name your scorecard…">
+      <div id="saveActions">
+        <button id="cancelSave" type="button">Cancel</button>
+        <button id="confirmSave" type="button">Save</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(wrap);
+
+  // Close on backdrop click
+  wrap.addEventListener('click', (e)=>{
+    if (e.target === wrap) wrap.style.display = 'none';
+  });
+
+  document.getElementById('cancelSave').onclick = ()=> {
+    wrap.style.display = 'none';
+  };
+
+  // Confirm save
+  document.getElementById('confirmSave').onclick = ()=> {
+    const inp = document.getElementById('saveName');
+    const name = (inp.value || '').trim();
+    if (!name) return; // do nothing if empty
+    saveNamedScorecard(name);
+    saveCurrentScorecard();
+    wrap.style.display = 'none';
+    // brief visual feedback on the main Save button (if present)
+    const saveBtn = document.getElementById('saveScore');
+    if (saveBtn){
+      saveBtn.textContent = 'Saved ✓';
+      setTimeout(()=> saveBtn.textContent = 'Save', 1200);
+    }
+  };
+
+  // Enter to save
+  document.getElementById('saveName').addEventListener('keydown', (e)=>{
+    if (e.key === 'Enter') {
+      document.getElementById('confirmSave').click();
+    }
+  });
+}
+
+function openSaveMenu(defaultName=''){
+  ensureSaveModal();
+  const wrap = document.getElementById('saveBackdrop');
+  const input = document.getElementById('saveName');
+  input.value = defaultName || '';
+  wrap.style.display = 'flex';
+  // focus after visible
+  setTimeout(()=> input.focus(), 0);
+}
+// --- Delete Confirm (modal) ---
+function ensureDeleteModal(){
+  if (document.getElementById('confirmBackdrop')) return;
+
+  const wrap = document.createElement('div');
+  wrap.id = 'confirmBackdrop';
+  wrap.innerHTML = `
+    <div id="confirmModal" class="card">
+      <h3>Delete saved scorecard</h3>
+      <div id="confirmName"></div>
+      <div id="confirmHint">This cannot be undone.</div>
+      <div id="confirmActions">
+        <button id="cancelDelete" type="button">Cancel</button>
+        <button id="confirmDelete" type="button">Delete</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(wrap);
+
+  // backdrop click closes
+  wrap.addEventListener('click', (e)=>{
+    if (e.target === wrap) wrap.style.display = 'none';
+  });
+}
+
+function openDeleteModal(name, onConfirm){
+  ensureDeleteModal();
+  const wrap = document.getElementById('confirmBackdrop');
+  const nameBox = document.getElementById('confirmName');
+  nameBox.textContent = name || '';
+  wrap.style.display = 'flex';
+
+  const cancelBtn = document.getElementById('cancelDelete');
+  const okBtn     = document.getElementById('confirmDelete');
+
+  // clean previous handlers
+  cancelBtn.onclick = ()=> { wrap.style.display = 'none'; };
+  okBtn.onclick = ()=> {
+    wrap.style.display = 'none';
+    if (typeof onConfirm === 'function') onConfirm();
+  };
+}
+
+
+function populateLoadList(filterText = ''){
+  const list = document.getElementById('loadList');
+  if (!list) return;
+  list.innerHTML = '';
+  const map = getAllSavedScorecards();
+  let names = Object.keys(map);
+
+  // Newest first
+  names.sort((a,b)=>{
+    const da = map[a]?.when ? Date.parse(map[a].when) : 0;
+    const db = map[b]?.when ? Date.parse(map[b].when) : 0;
+    return db - da;
+  });
+
+  // Case-insensitive filter by name or course
+  const q = (filterText || '').toLowerCase().trim();
+  if (q){
+    names = names.filter(n=>{
+      const course = (map[n]?.course || '').toLowerCase();
+      return n.toLowerCase().includes(q) || course.includes(q);
+    });
+  }
+
+  // Helper: compute to-par using only played holes (strokes > 0)
+  function computeToPar(scoreArr){
+    if (!Array.isArray(scoreArr) || scoreArr.length !== 18) return null;
+    let stPlayed = 0, parPlayed = 0;
+    for (let i = 0; i < 18; i++){
+      const s = scoreArr[i] || {};
+      const strokes = Number.isFinite(+s.strokes) ? +s.strokes : 0;
+      const par = Number.isFinite(+s.par) ? +s.par : 4;
+      if (strokes > 0){
+        stPlayed += strokes;
+        parPlayed += par;
+      }
+    }
+    if (stPlayed === 0) return null;
+    return stPlayed - parPlayed; // + over, − under, 0 even
+  }
+
+  if (names.length === 0){
+    list.innerHTML = `<li><div class="loadItem" style="cursor:default;opacity:.7">No matches</div></li>`;
+    return;
+  }
+
+  for (const n of names){
+    const entry = map[n];
+    const when = entry?.when ? new Date(entry.when).toLocaleString() : '';
+
+    // Build the to-par pill (same style as scorecard)
+    const toParVal = computeToPar(entry?.score);
+    let pillHTML = '';
+    if (toParVal !== null){
+      const txt = toParVal === 0 ? 'E' : (toParVal > 0 ? `+${toParVal}` : `${toParVal}`);
+      const cls = toParVal <= 0 ? 'ok' : 'bad'; // green for E/under, red for over
+      pillHTML = `<span class="pill-mini ${cls}" style="margin-left:8px">${txt}</span>`;
+    }
+
+    // Left column now: saved name (which already includes date/course) + score pill
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <button class="loadItem" type="button" data-name="${n}">
+        <span>${n}${pillHTML}</span>
+        <span class="loadMeta">${when}</span>
+      </button>`;
+    list.appendChild(li);
+  }
+
+  // Load on click & mark selected for delete
+  list.onclick = (e)=>{
+    const btn = e.target.closest('.loadItem');
+    if(!btn) return;
+    const name = btn.dataset.name;
+    const ok = loadNamedScorecard(name);
+    if (ok) {
+      saveCurrentScorecard();
+      renderScorecard();
+      document.getElementById('modalBackdrop').style.display = 'none';
+    }
+    const modal = document.getElementById('loadModal');
+    if (modal) modal.dataset.selected = name;
+  };
+}
+
+
+
+
+function openLoadMenu(){
+  ensureLoadModal();
+  populateLoadList();
+  document.getElementById('modalBackdrop').style.display = 'flex';
+}
+
+const strokesStore = {};
+function saveStrokesForCourseBase(name){
+  if(!name) return;
+  const key = baseCourseName(name);
+  strokesStore[key] = score.map(s => (s.strokes === '' ? '' : Math.max(0, Math.floor(+s.strokes||0))));
+}
+function restoreStrokesForCourseBase(name){
+  if(!name) return;
+  const key = baseCourseName(name);
+  const arr = strokesStore[key];
+  if(!arr) return;
+  for(let i=0;i<score.length;i++){
+    const v = arr[i];
+    score[i].strokes = (v === '' ? '' : Math.max(0, Math.floor(+v||0)));
+  }
+}
+
+// Preload the full Par row on the scorecard from the selected course
+function preloadCoursePars(courseName){
+  const rows = rowsForCourse(courseName);
+  // Reset all to a sensible default first
+  for (let i = 0; i < score.length; i++) {
+    score[i].par = 4;
+  }
+  // Apply CSV pars by hole number
+  for (const r of rows) {
+    const idx = (r.hole || 0) - 1;
+    if (idx >= 0 && idx < score.length) {
+      score[idx].par = r.par || 4;
+    }
+  }
+  // Re-render so the scorecard shows pars immediately
+  renderScorecard();
+}
 
 function renderScorecard(){
   const el = $('scorecard');
@@ -402,8 +1078,7 @@ function renderScorecard(){
               data-idx="${idx}" data-field="${field}" value="${val === '' ? '' : val}" min="0" step="1"></td>`;
   }).join('');
 
-   // --- compute totals using only PLAYED holes (strokes > 0) ---
-  // A hole is "played" if strokes > 0 (empty or 0 = not played)
+  // A hole is "played" if strokes > 0
   const played = score.map(s => Number.isFinite(+s.strokes) && +s.strokes > 0);
 
   function sumRange(arr, start, count, field, onlyPlayed = false) {
@@ -412,103 +1087,186 @@ function renderScorecard(){
       const idx = start + i;
       if (onlyPlayed && !played[idx]) continue;
       const v = +arr[idx][field];
-      if (Number.isFinite(v) && (field === 'strokes' ? v > 0 : true)) t += v;
+      if (!Number.isFinite(v)) continue;
+      if (field === 'strokes' ? v > 0 : true) t += v;
     }
     return t;
   }
 
-  // Pars: sum ONLY for holes that have strokes entered
-  const parOut   = sumRange(score, 0, 9, 'par', true);
-  const parIn    = sumRange(score, 9, 9, 'par', true);
-  const parTotal = parOut + parIn;
+  // Course par rows (always full nine values)
+  const parOutCourse = sumRange(score, 0, 9, 'par', false);
+  const parInCourse  = sumRange(score, 9, 9, 'par', false);
+  const parCourseTot = parOutCourse + parInCourse;
 
-  // Strokes: sum only played holes
-  const stOut    = sumRange(score, 0, 9, 'strokes', true);
-  const stIn     = sumRange(score, 9, 9, 'strokes', true);
-  const stTotal  = stOut + stIn;
+  // Strokes only for played holes
+  const stOutPlayed = sumRange(score, 0, 9, 'strokes', true);
+  const stInPlayed  = sumRange(score, 9, 9, 'strokes', true);
+  const stPlayedTot = stOutPlayed + stInPlayed;
 
-  // To-par relative to the holes you've actually played
-  const toPar    = stTotal > 0 ? (stTotal - parTotal) : 0;
-  const toParCls = toPar <= 0 ? 'ok' : 'bad';
+  // Par for played holes (the correct to-par basis)
+  const parOutPlayed = sumRange(score, 0, 9, 'par', true);
+  const parInPlayed  = sumRange(score, 9, 9, 'par', true);
+  const parPlayedTot = parOutPlayed + parInPlayed;
+
+  const toPar    = stPlayedTot > 0 ? (stPlayedTot - parPlayedTot) : 0;
   const toParTxt = toPar === 0 ? 'E' : (toPar > 0 ? `+${toPar}` : `${toPar}`);
-
+  const toParCls = toPar <= 0 ? 'ok' : 'bad';
 
   el.innerHTML = `
     <div class="scorecard">
-      <h2>Scorecard <span class="pill-mini ${toParCls}" title="To Par overall">${toParTxt}</span></h2>
+      <h2>Scorecard <span class="pill-mini ${toParCls}" title="Relative to par for holes played">${toParTxt}</span></h2>
       <table>
         <tr class="subhead"><th></th>${holesHeader(1)}<th>Out</th></tr>
-        <tr><th>Par</th>${holesInputs('par',1)}<td>${parOut}</td></tr>
-        <tr><th>Strokes</th>${holesInputs('strokes',1)}<td>${stOut||''}</td></tr>
+        <tr><th>Par</th>${holesInputs('par',1)}<td>${parOutCourse}</td></tr>
+        <tr><th>Strokes</th>${holesInputs('strokes',1)}<td>${stOutPlayed || ''}</td></tr>
 
         <tr class="subhead"><th></th>${holesHeader(10)}<th>In</th></tr>
-        <tr><th>Par</th>${holesInputs('par',10)}<td>${parIn}</td></tr>
-        <tr><th>Strokes</th>${holesInputs('strokes',10)}<td>${stIn||''}</td></tr>
+        <tr><th>Par</th>${holesInputs('par',10)}<td>${parInCourse}</td></tr>
+        <tr><th>Strokes</th>${holesInputs('strokes',10)}<td>${stInPlayed || ''}</td></tr>
 
         <tr class="totals"><td><b>Total</b></td>
-          <td colspan="9">${parOut + (stOut?` / ${stOut}`:'')}</td>
-          <td colspan="9">${parIn + (stIn?` / ${stIn}`:'')}</td>
+          <td colspan="9">${parOutCourse + (stOutPlayed ? ` / ${stOutPlayed}` : '')}</td>
+          <td colspan="9">${parInCourse + (stInPlayed  ? ` / ${stInPlayed}`  : '')}</td>
         </tr>
         <tr class="totals"><td><b>Grand</b></td>
-          <td colspan="18">Par ${parTotal}${stTotal?` / Strokes ${stTotal} (${toParTxt})`:''}</td>
+          <td colspan="18">
+            Par ${parCourseTot}${stPlayedTot ? ` / Strokes ${stPlayedTot} (${toParTxt})` : ''}
+          </td>
         </tr>
       </table>
       <div class="row row-inline" style="margin-top:8px">
         <button class="btn" id="resetScore" type="button" style="flex:1;background:linear-gradient(180deg,#ef4444,#b91c1c)">Clear scorecard</button>
-        <button class="btn" id="exportScore" type="button" style="flex:1">Export CSV</button>
+        <button class="btn" id="saveScore"  type="button" style="flex:1">Save</button>
+        <button class="btn" id="loadScore"  type="button" style="flex:1;background:linear-gradient(180deg,#0ea5e9,#0284c7)">Load</button>
       </div>
     </div>
   `;
 
-  // Delegate input changes
+  // Input change handler (auto-save current)
   el.querySelectorAll('input[data-idx]').forEach(inp=>{
     inp.addEventListener('input', ()=>{
       const idx = +inp.dataset.idx;
       const field = inp.dataset.field;
       const v = inp.value === '' ? '' : Math.max(0, Math.floor(+inp.value||0));
       score[idx][field] = v;
+      saveCurrentScorecard();
       renderScorecard();
     });
   });
 
-  // Clear
-  const resetBtn = $('resetScore');
-  if(resetBtn){
-    resetBtn.onclick = ()=>{
-      for(let i=0;i<18;i++){ score[i].par = 4; score[i].strokes=''; }
-      renderScorecard();
-    };
-  }
+ // Clear strokes only (preserve pars) using custom modal
+const resetBtn = $('resetScore');
+if (resetBtn){
+  resetBtn.onclick = async ()=>{
+    const ok = await confirmModal('Are you sure you want to clear all entered strokes?');
+    if (!ok) return;
+    for (let i = 0; i < 18; i++){
+      score[i].strokes = '';
+    }
+    saveCurrentScorecard();
+    renderScorecard();
+  };
+}
 
-  // Export CSV
-  const exportBtn = $('exportScore');
-  if(exportBtn){
-    exportBtn.onclick = ()=>{
-      const rows = [
-        ['Hole', ...Array.from({length:18},(_,i)=>i+1)],
-        ['Par', ...score.map(s=>s.par)],
-        ['Strokes', ...score.map(s=>s.strokes || '')]
-      ];
-      const csv = rows.map(r=>r.join(',')).join('\n');
-      const blob = new Blob([csv], {type:'text/csv'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'scorecard.csv';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    };
+
+
+
+// Save named snapshot (for multiple scorecards) — themed modal
+const saveBtn = $('saveScore');
+if (saveBtn){
+  saveBtn.onclick = ()=>{
+    const when = new Date();
+    const defaultName = `${when.toLocaleDateString()} ${currentCourse || ''}`.trim();
+    openSaveMenu(defaultName);
+  };
+}
+
+
+// Load from a named snapshot (clickable modal)
+const loadBtn = $('loadScore');
+if (loadBtn){
+  loadBtn.onclick = ()=> openLoadMenu();
+}
+
+}
+
+
+
+// Initial render once the DOM exists (+ try loading saved session)
+renderScorecard();
+if (loadCurrentScorecardIfAny()) renderScorecard();
+
+// ===== Fetch CSV and build menus =====
+async function initCourses() {
+  try {
+    const res = await fetch(CSV_URL, { cache: 'no-store' });
+    const txt = await res.text();
+    courseRows = parseCSV(txt);
+
+    fillCourseMenu();
+
+    // Optional: auto-select the first course & first hole on load
+  const firstCourse = getCourseNames(courseRows)[0];
+if (firstCourse) {
+  currentCourse = firstCourse;
+fillHoleMenu(currentCourse);
+preloadAllParsForCourse(currentCourse);   // ensure both 9s populate
+applyHoleByIndex(currentCourse, 0);
+
+}
+
+
+  } catch (e) {
+    line('Could not load Courses CSV. Check the URL and CORS.', 'err');
+    console.error(e);
   }
 }
 
-// Initial render once the DOM exists
-renderScorecard();
+courseSelect?.addEventListener('change', () => {
+  currentCourse = courseSelect.value;
+  if (!currentCourse) {
+    holeSelect.innerHTML = '<option value="">–</option>';
+    holeSelect.disabled = true;
+    for (let i = 0; i < score.length; i++) score[i].par = 4;
+    renderScorecard();
+    return;
+  }
+  fillHoleMenu(currentCourse);
+  preloadAllParsForCourse(currentCourse);
+  applyHoleByIndex(currentCourse, 0); // this will randomize wind for the first hole
+});
+
+
+
+
+holeSelect?.addEventListener('change', () => {
+  if (!currentCourse) return;
+  const rows = rowsForCourse(currentCourse);
+  const idx = rows.findIndex(r => String(r.hole) === holeSelect.value);
+  if (idx >= 0) applyHoleByIndex(currentCourse, idx);
+});
+
+nextHoleBtn?.addEventListener('click', goToNextHole);
+
+// Kick off CSV load
+initCourses();
 
   // ---------- canvas & image ----------
   const cv = $('cv');
   const ctx = cv.getContext('2d');
+
+// --- animation loop for the dashed target line ---
+// This runs every frame. We only advance the dash when a target line was drawn.
+function animate(){
+  if (hasTargetLine) {
+    targetDashOffset = (targetDashOffset +0.3) % 1000; // tweak 0.8 for faster/slower scan
+  }
+  hasTargetLine = false;   // redraw will set it back to true if a target line exists
+  redraw();
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
+
   const imgInput = $('imgInput');
   const clickStatus = $('clickStatus');
   const shots = []; // keep plotted shots for redraw/undo
@@ -518,6 +1276,23 @@ renderScorecard();
   // color cycle for shots
   const shotColors = ['#ef4444','#f59e0b','#22c55e','#38bdf8','#a78bfa','#e879f9','#14b8a6','#fb7185'];
   let shotIndex = 0;
+
+// --- Wind state (randomized per hole) ---
+let windSpeed = 0;       // mph
+let windFromDeg = 0;     // 0=N, 90=E, etc.
+
+function randomizeWind(){
+  // Speed: 2–20 mph, one decimal
+  windSpeed = +(2 + Math.random() * 18).toFixed(1);
+  // Direction: 0–359° (FROM bearing)
+  windFromDeg = Math.floor(Math.random() * 360);
+}
+
+
+// --- Animated target line state ---
+let targetDashOffset = 0;   // how far the dash pattern has "scanned"
+let hasTargetLine = false;  // set to true inside redraw() when target line is drawn
+
   // --- View transform (zoom/pan) ---
 const view = { scale: 1, tx: 0, ty: 0, min: 0.6, max: 4 };
 function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
@@ -594,35 +1369,32 @@ const CLUB_COLORS = {
 };
 function getClubColor(club){ return CLUB_COLORS[club] || null; }
 
+ if (imgInput) {
   imgInput.addEventListener('change', (e)=>{
     const file = e.target.files[0];
     if(!file) return;
     const img = new Image();
     img.onload = ()=>{
       baseImg = img;
-      // Fit canvas to image while keeping a reasonable max size
       const maxW = 1024, maxH = 768;
-      let w = img.width, h=img.height;
-      const scale = Math.min(maxW/w, maxH/h, 1);
-      cv.width = Math.round(w*scale);
-cv.height= Math.round(h*scale);
-// reset view on new image
-view.scale = 1; view.tx = 0; view.ty = 0;
-redraw();
-
+      const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+      cv.width  = Math.round(img.width  * scale);
+      cv.height = Math.round(img.height * scale);
+      view.scale = 1; view.tx = 0; view.ty = 0;
+      redraw();
     };
     img.src = URL.createObjectURL(file);
 
     // reset markers/shots
-    tee = pin = target = null;
-shots.length = 0;
-shotIndex = 0;
-clickStatus.textContent = 'TEE';
-clearOut();
-renderShotList();
-
-
+    tee = null; pin = null; target = null;
+    shots.length = 0;
+    shotIndex = 0;
+    clickStatus.textContent = 'TEE';
+    clearOut();
+    renderShotList();
   });
+}
+
 
   cv.addEventListener('click', (ev)=>{
   if(!baseImg) return;
@@ -770,7 +1542,7 @@ if(tee && pin){
   const teeToPinPix = Math.hypot(pin.x-tee.x, pin.y-tee.y);
   const pxPerYard = (hole > 0) ? (teeToPinPix / hole) : 0;
 
-  ctx.strokeStyle = '#38bdf8';
+  ctx.strokeStyle = '#e2e8f0';
   ctx.lineWidth = 2;
   ctx.setLineDash([8,6]);
   ctx.beginPath();
@@ -782,29 +1554,64 @@ if(tee && pin){
   // yard markers along the dashed (hole) line
   const exHole = unitVec(tee, pin);
   drawYardMarkers(tee, exHole, pxPerYard, hole, 10, 50);
+  /* ----- Compass/Wind overlay (screen-space) ----- */
+(() => {
+  // Aim = target line if present; otherwise tee→pin (if both exist)
+  let aimDeg = NaN;
+  if (tee && (target || pin)) {
+    const startPt = (shots.length > 0 && target) ? shots[shots.length - 1] : tee;
+    const endPt   = target ? target : pin;
+    if (startPt && endPt) {
+      aimDeg = bearingDeg(startPt.x, startPt.y, endPt.x, endPt.y);
+    }
+  }
+ drawCompassOverlay(
+  ctx,
+  Number.isFinite(aimDeg) ? aimDeg : NaN,
+  windFromDeg,
+  windSpeed
+);
+
+})();
+
 }
 
 
-// Solid target line: START (tee or last landing) → Target (aim) + yard markers for shot distance
+// Animated neon-green target (aim) line so it’s distinct from club colors
 if ((tee && target) || (shots.length > 0 && target)) {
-  const start = (shots.length > 0) ? shots[shots.length-1] : tee;
+  const start = (shots.length > 0) ? shots[shots.length - 1] : tee;
 
   const hole = parseFloat($('holeYards').value) || 0;
   const R    = parseFloat($('totalYards').value) || 0;
-  const teeToPinPix = Math.hypot(pin.x-tee.x, pin.y-tee.y);
+  const teeToPinPix = Math.hypot(pin.x - tee.x, pin.y - tee.y);
   const pxPerYard = (hole > 0) ? (teeToPinPix / hole) : 0;
 
-  ctx.strokeStyle = '#38bdf8';
-  ctx.lineWidth = 2;
+  // neon green dashed "laser" with subtle glow
+  ctx.strokeStyle = '#22ff88';
+  ctx.lineWidth = 2.4;
+  ctx.setLineDash([4, 3]);
+  ctx.lineDashOffset = -targetDashOffset; // <- animated each frame
+  ctx.shadowColor = '#22ff88';
+  ctx.shadowBlur = 6;
+
   ctx.beginPath();
   ctx.moveTo(start.x, start.y);
   ctx.lineTo(target.x, target.y);
   ctx.stroke();
 
+  // reset effects for later drawing
+  ctx.setLineDash([]);
+  ctx.shadowBlur = 0;
+
   // Yard markers along the planned shot line
   const exAim = unitVec(start, target);
   drawYardMarkers(start, exAim, pxPerYard, R, 10, 50);
+
+  // tell the animation loop a target line was drawn this frame
+  hasTargetLine = true;
 }
+
+
 
     // tee/pin dots
     if(tee)    drawDot(tee.x, tee.y, '#22c55e', 6);
@@ -974,6 +1781,116 @@ function drawYardMarkers(start, dir, pxPerYard, yardsTotal, tickEvery=10, labelE
       ctx.fillStyle = '#cbd5e1';
       ctx.fillText(`${yds} yd`, tx, ty);
     }
+  }
+}
+function bearingDeg(ax, ay, bx, by){
+  // 0° = North (up), 90° = East (right), clockwise positive
+  const dx = bx - ax, dy = by - ay;
+  const deg = (Math.atan2(dx, -dy) * 180/Math.PI + 360) % 360;
+  return deg;
+}
+
+function drawCompassOverlay(ctx, aimBearing, windFromDeg, windSpeed){
+  // Draw in screen-space (no zoom/pan)
+  ctx.setTransform(1,0,0,1,0,0);
+
+  const size = 90;      // panel inner size
+  const pad  = 10;      // margin from top-left
+  const r    = 30;      // compass radius
+  const x0   = pad + 8; // panel x
+  const y0   = pad + 8; // panel y
+
+  // Panel (rounded if supported)
+  ctx.fillStyle = 'rgba(10,20,34,0.7)';
+  ctx.strokeStyle = 'rgba(36,49,68,0.9)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x0-8, y0-16, size+32, size+34, 10);
+  else ctx.rect(x0-8, y0-16, size+32, size+34);
+  ctx.fill(); ctx.stroke();
+
+  // Compass ring
+  ctx.beginPath();
+  ctx.arc(x0 + size/2, y0 + size/2, r, 0, Math.PI*2);
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // N label
+  ctx.fillStyle = '#e2e8f0';
+  ctx.font = '12px system-ui, Segoe UI, Roboto';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('N', x0 + size/2, y0 + size/2 - r - 10);
+
+  // Aim arrow (laser green)
+  if (Number.isFinite(aimBearing)){
+    const rad = aimBearing * Math.PI/180;
+    const cx = x0 + size/2, cy = y0 + size/2;
+    const len = r - 6;
+    const ex = Math.sin(rad), ey = -Math.cos(rad);
+    ctx.strokeStyle = '#22ff88';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = '#22ff88';
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.moveTo(cx - ex*10, cy - ey*10);
+    ctx.lineTo(cx + ex*len, cy + ey*len);
+    ctx.stroke();
+    // arrow head
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#22ff88';
+    ctx.beginPath();
+    ctx.moveTo(cx + ex*len, cy + ey*len);
+    ctx.lineTo(cx + ex*(len-8) + ey*5, cy + ey*(len-8) - ex*5);
+    ctx.lineTo(cx + ex*(len-8) - ey*5, cy + ey*(len-8) + ex*5);
+    ctx.closePath(); ctx.fill();
+  }
+
+  // Wind arrow (FROM → draw TO direction)
+  if (Number.isFinite(windFromDeg) && (windSpeed ?? 0) >= 0){
+    const toDeg = (windFromDeg + 180) % 360;
+    const rad = toDeg * Math.PI/180;
+    const cx = x0 + size/2, cy = y0 + size/2;
+    const len = r - 14;
+    const ex = Math.sin(rad), ey = -Math.cos(rad);
+    ctx.strokeStyle = '#7dd3fc';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath();
+    ctx.moveTo(cx - ex*8, cy - ey*8);
+    ctx.lineTo(cx + ex*len, cy + ey*len);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // head
+    ctx.fillStyle = '#7dd3fc';
+    ctx.beginPath();
+    ctx.moveTo(cx + ex*len, cy + ey*len);
+    ctx.lineTo(cx + ex*(len-7) + ey*4, cy + ey*(len-7) - ex*4);
+    ctx.lineTo(cx + ex*(len-7) - ey*4, cy + ey*(len-7) + ex*4);
+    ctx.closePath(); ctx.fill();
+
+      // speed + description text
+  ctx.fillStyle = '#a3b2c7';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(`${windSpeed || 0} mph`, x0 - 2, y0 + size + 6);
+
+  // speed + description text (inline)
+let desc = '';
+if (windSpeed < 4) desc = 'Calm';
+else if (windSpeed < 8) desc = 'Light breeze';
+else if (windSpeed < 15) desc = 'Breezy';
+else if (windSpeed < 20) desc = 'Windy';
+else desc = 'Strong gusts';
+
+ctx.fillStyle = '#a3b2c7';
+ctx.textAlign = 'left';
+ctx.textBaseline = 'alphabetic';
+ctx.font = '12px system-ui, Segoe UI, Roboto';
+ctx.fillText(`${windSpeed || 0} mph – ${desc}`, x0 - 2, y0 + size + 6);
+
+
   }
 }
 
