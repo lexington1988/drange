@@ -1,6 +1,6 @@
 ﻿course,hole,par,yards,image,tee_x,tee_y,pin_x,pin_y,target_x,target_y
 Six Hills (Front 9),1,2,398,./six-hills/hole-01.jpg,0.0279,0.6647,0.9475,0.1898,,
-Six Hills (Front 9),2,1,196,./six-hills/hole-02.jpg,,,,,,
+Six Hills (Front 9),2,1,196,./six-hills/hole-02.jpg,0.7961,0.8550,0.0828,0.0715,,
 Six Hills (Front 9),3,2,347,./six-hills/hole-03.jpg,,,,,,
 Six Hills (Front 9),4,1,239,./six-hills/hole-04.jpg,,,,,,
 Six Hills (Front 9),5,3,472,./six-hills/hole-05.jpg,,,,,,
@@ -17,3 +17,4 @@ Six Hills (Back 9),15,2,278,./six-hills/hole-15.jpg,,,,,,
 Six Hills (Back 9),16,1,175,./six-hills/hole-16.jpg,,,,,,
 Six Hills (Back 9),17,2,285,./six-hills/hole-17.jpg,,,,,,
 Six Hills (Back 9),18,3,570,./six-hills/hole-18.jpg,,,,,,
+
