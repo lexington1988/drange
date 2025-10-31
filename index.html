@@ -447,6 +447,26 @@ canvas{display:block;width:100%;height:auto;background:#000;border-radius:14px;b
   const $ = (id)=>document.getElementById(id);
   const fmt = (n,d=1)=>Number.isFinite(n)?n.toFixed(d):'—';
   const out = $('out');
+  // --- Temporary scroll lock while dragging the target
+let _scrollLock = 0;
+function lockScroll(){
+  if (_scrollLock++ > 0) return;
+  // overflow hidden stops scrollbars; touchmove preventDefault (below) halts iOS rubber band
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
+}
+function unlockScroll(){
+  if (_scrollLock === 0) return;
+  if (--_scrollLock > 0) return;
+  document.documentElement.style.overflow = '';
+  document.body.style.overflow = '';
+}
+// Prevent touch scrolling globally ONLY while dragging target
+function _blockTouchMoveWhileDragging(e){
+  if (draggingTarget) e.preventDefault();
+}
+window.addEventListener('touchmove', _blockTouchMoveWhileDragging, { passive:false });
+
   // ===== Club Data Log (persistent) =====
 const LS_SHOT_LOG = 'rh:club:shotlog';
 
@@ -1896,10 +1916,12 @@ cv.addEventListener('pointerdown', (e)=>{
   const hit = hitTestTarget(e.clientX, e.clientY);
   if (hit){
     draggingTarget = true;
+    lockScroll();                               // <-- NEW
     cv.setPointerCapture?.(e.pointerId);
     e.preventDefault();
   }
 });
+
 
 cv.addEventListener('pointermove', (e)=>{
   if (!draggingTarget) return;
@@ -1918,13 +1940,16 @@ cv.addEventListener('pointermove', (e)=>{
 cv.addEventListener('pointerup', (e)=>{
   if (!draggingTarget) return;
   draggingTarget = false;
+  unlockScroll();                               // <-- NEW
   cv.releasePointerCapture?.(e.pointerId);
   e.preventDefault();
 });
 
 cv.addEventListener('pointercancel', ()=>{
+  if (draggingTarget) unlockScroll();           // <-- NEW
   draggingTarget = false;
 });
+
 
 
 
