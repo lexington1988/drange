@@ -23,7 +23,7 @@ input:focus,select:focus{outline:2px solid var(--accent);border-color:transparen
 .btn:active{transform:translateY(1px)}
 .muted{color:var(--muted);font-size:12px}
 .hr{height:1px;background:#1f2b3e;margin:10px 0}
-canvas{display:block;width:100%;height:auto;background:#000;border-radius:14px;border:1px solid #1f2b3e;touch-action:none}
+canvas{display:block;width:100%;height:auto;background:#000;border-radius:14px;border:1px solid #1f2b3e;}
 
 .legend{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .dot{width:10px;height:10px;border-radius:50%}
@@ -295,7 +295,7 @@ canvas{display:block;width:100%;height:auto;background:#000;border-radius:14px;b
 </head>
 <body>
 <div class="wrap">
-  <h1>Range Helper – Overlay on Course Image</h1>
+  <h1>GIR Drivng Range</h1>
 
   <div class="flex">
     <!-- Canvas/Image side -->
@@ -1513,7 +1513,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // ---------- canvas & image ----------
   const cv = $('cv');
   const ctx = cv.getContext('2d');
-cv.style.touchAction = 'none';
+cv.style.touchAction = 'auto';
 // --- animation loop for the dashed target line ---
 // This runs every frame. We only advance the dash when a target line was drawn.
 function animate(){
