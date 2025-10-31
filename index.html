@@ -220,6 +220,22 @@ canvas{display:block;width:100%;height:auto;background:#000;border-radius:14px;b
 #confirmDelete {
   background:#2a0f13; border-color:#57222a; color:#ffc0ca; font-weight:700;
 }
+/* --- Author Mode (hidden unless toggled) --- */
+.author-panel{
+  position:fixed; right:10px; bottom:12px;
+  background:var(--panel); border:1px solid #243144;
+  border-radius:12px; padding:10px;
+  box-shadow:0 12px 30px rgba(0,0,0,.4); z-index:9999;
+  display:none; width:290px;
+}
+.author-panel.visible{ display:block; }
+.author-panel .title{ font-weight:700; margin-bottom:6px; }
+.author-panel textarea{
+  width:100%; margin-top:6px; resize:none;
+  background:#0a1422; color:var(--ink);
+  border:1px solid #223045; border-radius:8px; padding:8px;
+}
+.author-note{ font-size:12px; color:var(--muted); margin-top:6px; }
 
 </style>
 </head>
@@ -400,13 +416,34 @@ function parseCSV(text) {
     const cells = line.split(',').map(c => c.trim());
     const obj = {};
     headers.forEach((h, i) => obj[h] = cells[i] ?? '');
-    // normalize types
+
+    // normalize basic types
     obj.hole  = +obj.hole || 0;
     obj.par   = +obj.par || 0;
     obj.yards = +obj.yards || 0;
+
+    // helper to parse normalized [0..1] or percent [0..100]
+    const norm = (v) => {
+      if (v === '' || v == null) return NaN;
+      const n = +v;
+      if (!Number.isFinite(n)) return NaN;
+      if (n > 1) return n / 100; // treat as percent
+      if (n < 0) return NaN;
+      return n; // already 0..1
+    };
+
+    // optional normalized coords (0..1) for tee/pin/target
+    obj.tee_x    = norm(obj.tee_x);
+    obj.tee_y    = norm(obj.tee_y);
+    obj.pin_x    = norm(obj.pin_x);
+    obj.pin_y    = norm(obj.pin_y);
+    obj.target_x = norm(obj.target_x);
+    obj.target_y = norm(obj.target_y);
+
     return obj;
   });
 }
+
 
 // Turn possible relative image path into absolute
 
@@ -591,27 +628,58 @@ document.querySelector('canvas')?.scrollIntoView({ behavior: 'smooth' });
   // Load the hole image onto the canvas
   const img = new Image();
   img.crossOrigin = 'anonymous';
-  img.onload = () => {
-    baseImg = img;
+ img.onload = () => {
+  baseImg = img;
 
-    // Fit canvas to image with sane max size (same as your upload flow)
-    const maxW = 1024, maxH = 768;
-    let w = img.width, h = img.height;
-    const scale = Math.min(maxW / w, maxH / h, 1);
-    cv.width  = Math.round(w * scale);
-    cv.height = Math.round(h * scale);
+  // Fit canvas
+  const maxW = 1024, maxH = 768;
+  let w = img.width, h = img.height;
+  const scale = Math.min(maxW / w, maxH / h, 1);
+  cv.width  = Math.round(w * scale);
+  cv.height = Math.round(h * scale);
 
-    // reset view and markers/shots
-    view.scale = 1; view.tx = 0; view.ty = 0;
-    tee = pin = target = null;
-    shots.length = 0;
-    shotIndex = 0;
+  // reset view and shots
+  view.scale = 1; view.tx = 0; view.ty = 0;
+  shots.length = 0;
+  shotIndex = 0;
+  clearOut();
+  renderShotList();
+
+  // Try to pre-place tee/pin/target from CSV (normalized coords)
+  const nx = (v) => (Number.isFinite(v) ? v : NaN);
+  const toPx = (rx, ry) => ({
+    x: (rx || 0) * cv.width,
+    y: (ry || 0) * cv.height
+  });
+
+  const hasTee = Number.isFinite(nx(row.tee_x)) && Number.isFinite(nx(row.tee_y));
+  const hasPin = Number.isFinite(nx(row.pin_x)) && Number.isFinite(nx(row.pin_y));
+
+  tee = hasTee ? toPx(row.tee_x, row.tee_y) : null;
+  pin = hasPin ? toPx(row.pin_x, row.pin_y) : null;
+
+  // Target: use CSV if provided; otherwise set ~60% along tee→pin if both exist
+  if (Number.isFinite(nx(row.target_x)) && Number.isFinite(nx(row.target_y))) {
+    target = toPx(row.target_x, row.target_y);
+  } else if (tee && pin) {
+    const t = 0.6; // 60% along the line
+    target = { x: tee.x + (pin.x - tee.x) * t, y: tee.y + (pin.y - tee.y) * t };
+  } else {
+    target = null;
+  }
+
+  // Update click status (so user knows what’s next)
+  if (tee && pin) {
+    clickStatus.textContent = target ? 'SET' : 'TARGET';
+  } else if (tee) {
+    clickStatus.textContent = 'PIN';
+  } else {
     clickStatus.textContent = 'TEE';
-    clearOut();
-    renderShotList();
+  }
 
-    redraw();
-  };
+  redraw();
+};
+
   img.onerror = () => {
     clearOut();
     line('Could not load hole image from CSV path.', 'err');
@@ -1272,6 +1340,133 @@ requestAnimationFrame(animate);
   const shots = []; // keep plotted shots for redraw/undo
   let baseImg = null;
   let tee = null, pin = null, target = null; // current drawing (third click = target line point)
+// ===== Author Mode panel (for capturing normalized tee/pin/target) =====
+function initAuthorPanel(){
+  // floating UI
+  const box = document.createElement('div');
+  box.id = 'authorPanel';
+  Object.assign(box.style, {
+    position:'fixed', right:'14px', bottom:'14px', zIndex:10001,
+    width:'min(320px, 92vw)',
+    background:'var(--panel)', color:'var(--ink)',
+    border:'1px solid #243144', borderRadius:'14px', padding:'10px',
+    boxShadow:'0 18px 60px rgba(0,0,0,.45)', display:'none'
+  });
+
+  box.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;justify-content:space-between">
+      <b style="font-size:14px">Author Mode</b>
+      <button id="authClose" type="button"
+        style="border:1px solid #223045;background:#0a1422;color:var(--ink);
+               border-radius:10px;padding:6px 10px;cursor:pointer">Close</button>
+    </div>
+
+    <div class="hr" style="height:1px;background:#1f2b3e;margin:8px 0"></div>
+
+    <div style="font-size:12px;color:var(--muted);margin-bottom:6px">
+      Click Tee → Pin → Target on the canvas. Values update live.
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px">
+      <div class="pill" style="padding:6px 8px">Tee X</div><input id="authTeeX"  readonly>
+      <div class="pill" style="padding:6px 8px">Tee Y</div><input id="authTeeY"  readonly>
+      <div class="pill" style="padding:6px 8px">Pin X</div><input id="authPinX"  readonly>
+      <div class="pill" style="padding:6px 8px">Pin Y</div><input id="authPinY"  readonly>
+      <div class="pill" style="padding:6px 8px">Target X</div><input id="authTarX" readonly>
+      <div class="pill" style="padding:6px 8px">Target Y</div><input id="authTarY" readonly>
+    </div>
+
+    <div class="hr" style="height:1px;background:#1f2b3e;margin:8px 0"></div>
+
+    <div style="display:flex;gap:8px">
+      <button id="authCopy"  type="button" class="btn" style="flex:1">Copy CSV cells</button>
+      <button id="authCopyPct" type="button" class="btn" style="flex:1">Copy as %</button>
+    </div>
+    <div id="authHint" class="muted" style="margin-top:6px;font-size:12px">
+      Shortcut: <b>Ctrl + Alt + A</b> to toggle.
+    </div>
+  `;
+
+  // match input styling to theme
+  [...box.querySelectorAll('input[readonly]')].forEach(inp=>{
+    Object.assign(inp.style,{
+      width:'100%', padding:'8px 10px', borderRadius:'10px',
+      border:'1px solid #223045', background:'#0a1422', color:'var(--ink)'
+    });
+  });
+
+  document.body.appendChild(box);
+
+  const els = {
+    wrap: box,
+    close: box.querySelector('#authClose'),
+    teeX:  box.querySelector('#authTeeX'),
+    teeY:  box.querySelector('#authTeeY'),
+    pinX:  box.querySelector('#authPinX'),
+    pinY:  box.querySelector('#authPinY'),
+    tarX:  box.querySelector('#authTarX'),
+    tarY:  box.querySelector('#authTarY'),
+    copy:  box.querySelector('#authCopy'),
+    copyPct: box.querySelector('#authCopyPct'),
+    hint:  box.querySelector('#authHint')
+  };
+
+  function fmt(n){ return Number.isFinite(n) ? n.toFixed(4) : ''; }
+  function fmtPct(n){ return Number.isFinite(n) ? (n*100).toFixed(2) : ''; }
+
+  function normalizedXY(p){
+    if(!p || !cv || !cv.width || !cv.height) return {x:NaN,y:NaN};
+    return { x: p.x / cv.width, y: p.y / cv.height };
+  }
+
+  function refresh(){
+    const t = normalizedXY(tee);
+    const p = normalizedXY(pin);
+    const g = normalizedXY(target);
+    els.teeX.value = fmt(t.x); els.teeY.value = fmt(t.y);
+    els.pinX.value = fmt(p.x); els.pinY.value = fmt(p.y);
+    els.tarX.value = fmt(g.x); els.tarY.value = fmt(g.y);
+  }
+
+  async function copyCells(asPercent=false){
+    const v = [
+      asPercent ? fmtPct(+els.teeX.value) : els.teeX.value,
+      asPercent ? fmtPct(+els.teeY.value) : els.teeY.value,
+      asPercent ? fmtPct(+els.pinX.value) : els.pinX.value,
+      asPercent ? fmtPct(+els.pinY.value) : els.pinY.value,
+      asPercent ? fmtPct(+els.tarX.value) : els.tarX.value,
+      asPercent ? fmtPct(+els.tarY.value) : els.tarY.value
+    ].join(',');
+    try {
+      await navigator.clipboard.writeText(v);
+      els.hint.textContent = 'Copied ✓  (' + v + ')';
+      setTimeout(()=> els.hint.textContent = 'Shortcut: Ctrl + Alt + A to toggle.', 1500);
+    } catch {}
+  }
+
+  els.copy.onclick = ()=> copyCells(false);
+  els.copyPct.onclick = ()=> copyCells(true);
+  els.close.onclick = ()=> (box.style.display='none');
+
+  // keyboard toggle
+ document.addEventListener('keydown', (e)=>{
+  if(e.ctrlKey && e.altKey && (e.key.toLowerCase() === 'a')){
+    box.style.display = (box.style.display === 'none' || !box.style.display) ? 'block' : 'none';
+    refresh();
+  }
+});
+
+
+  // URL toggle ?author=1
+  try{
+    const sp = new URLSearchParams(location.search);
+    if(sp.get('author') === '1'){ box.style.display = 'block'; refresh(); }
+  }catch{}
+
+  return { refresh, toggle:(on)=>{ box.style.display = on ? 'block' : 'none'; refresh(); } };
+}
+// initialise the panel now that cv/tee/pin/target exist
+const authorUI = initAuthorPanel();
 
   // color cycle for shots
   const shotColors = ['#ef4444','#f59e0b','#22c55e','#38bdf8','#a78bfa','#e879f9','#14b8a6','#fb7185'];
@@ -1527,54 +1722,55 @@ renderShotList();
 
   });
 
-  function redraw(){
-    // background
-ctx.setTransform(1,0,0,1,0,0);              // reset any previous transform
-ctx.clearRect(0,0,cv.width,cv.height);
-ctx.setTransform(view.scale,0,0,view.scale, view.tx, view.ty); // apply zoom/pan
-if(baseImg) ctx.drawImage(baseImg,0,0,cv.width,cv.height);
+function redraw(){
+  // background
+  ctx.setTransform(1,0,0,1,0,0);              // reset any previous transform
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.setTransform(view.scale,0,0,view.scale, view.tx, view.ty); // apply zoom/pan
+  if(baseImg) ctx.drawImage(baseImg,0,0,cv.width,cv.height);
 
+  // target line & markers
+  // Dashed reference line: Tee → Pin (hole) + yard markers along the hole
+  if(tee && pin){
+    const hole = parseFloat($('holeYards').value) || 0;
+    const teeToPinPix = Math.hypot(pin.x-tee.x, pin.y-tee.y);
+    const pxPerYard = (hole > 0) ? (teeToPinPix / hole) : 0;
 
-    // target line & markers
- // Dashed reference line: Tee → Pin (hole) + yard markers along the hole
-if(tee && pin){
-  const hole = parseFloat($('holeYards').value) || 0;
-  const teeToPinPix = Math.hypot(pin.x-tee.x, pin.y-tee.y);
-  const pxPerYard = (hole > 0) ? (teeToPinPix / hole) : 0;
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8,6]);
+    ctx.beginPath();
+    ctx.moveTo(tee.x, tee.y);
+    ctx.lineTo(pin.x, pin.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
 
-  ctx.strokeStyle = '#e2e8f0';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([8,6]);
-  ctx.beginPath();
-  ctx.moveTo(tee.x, tee.y);
-  ctx.lineTo(pin.x, pin.y);
-  ctx.stroke();
-  ctx.setLineDash([]);
+    // yard markers along the dashed (hole) line
+    const exHole = unitVec(tee, pin);
+    drawYardMarkers(tee, exHole, pxPerYard, hole, 10, 50);
 
-  // yard markers along the dashed (hole) line
-  const exHole = unitVec(tee, pin);
-  drawYardMarkers(tee, exHole, pxPerYard, hole, 10, 50);
-  /* ----- Compass/Wind overlay (screen-space) ----- */
-(() => {
-  // Aim = target line if present; otherwise tee→pin (if both exist)
-  let aimDeg = NaN;
-  if (tee && (target || pin)) {
-    const startPt = (shots.length > 0 && target) ? shots[shots.length - 1] : tee;
-    const endPt   = target ? target : pin;
-    if (startPt && endPt) {
-      aimDeg = bearingDeg(startPt.x, startPt.y, endPt.x, endPt.y);
-    }
-  }
- drawCompassOverlay(
-  ctx,
-  Number.isFinite(aimDeg) ? aimDeg : NaN,
-  windFromDeg,
-  windSpeed
-);
-
-})();
-
+    /* ----- Compass/Wind overlay (screen-space) ----- */
+    (() => {
+      // Aim = target line if present; otherwise tee→pin (if both exist)
+      let aimDeg = NaN;
+      if (tee && (target || pin)) {
+        const startPt = (shots.length > 0 && target) ? shots[shots.length - 1] : tee;
+        const endPt   = target ? target : pin;
+        if (startPt && endPt) {
+          aimDeg = bearingDeg(startPt.x, startPt.y, endPt.x, endPt.y);
+        }
+      }
+      drawCompassOverlay(
+        ctx,
+        Number.isFinite(aimDeg) ? aimDeg : NaN,
+        windFromDeg,
+        windSpeed
+      );
+    })();
+  if (authorUI) authorUI.refresh();
 }
+
+  
 
 
 // Animated neon-green target (aim) line so it’s distinct from club colors
