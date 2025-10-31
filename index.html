@@ -667,6 +667,8 @@ document.querySelector('canvas')?.scrollIntoView({ behavior: 'smooth' });
   } else {
     target = null;
   }
+// Lock tee/pin if both came from CSV (only target can be adjusted by clicks)
+lockTeePin = (hasTee && hasPin);
 
   // Update click status (so user knows what’s next)
   if (tee && pin) {
@@ -1339,7 +1341,9 @@ requestAnimationFrame(animate);
   const clickStatus = $('clickStatus');
   const shots = []; // keep plotted shots for redraw/undo
   let baseImg = null;
-  let tee = null, pin = null, target = null; // current drawing (third click = target line point)
+  let tee = null, pin = null, target = null;// current drawing (third click = target line point)
+  let lockTeePin = false; // when true, clicks only adjust the target (tee/pin locked)
+
 // ===== Author Mode panel (for capturing normalized tee/pin/target) =====
 function initAuthorPanel(){
   // floating UI
@@ -1440,7 +1444,7 @@ function initAuthorPanel(){
     try {
       await navigator.clipboard.writeText(v);
       els.hint.textContent = 'Copied ✓  (' + v + ')';
-      setTimeout(()=> els.hint.textContent = 'Shortcut: Ctrl + Alt + A to toggle.', 1500);
+      setTimeout(()=> els.hint.textContent = 'Shortcut: f2 to toggle.', 1500);
     } catch {}
   }
 
@@ -1449,12 +1453,57 @@ function initAuthorPanel(){
   els.close.onclick = ()=> (box.style.display='none');
 
   // keyboard toggle
- document.addEventListener('keydown', (e)=>{
-  if(e.ctrlKey && e.altKey && (e.key.toLowerCase() === 'a')){
-    box.style.display = (box.style.display === 'none' || !box.style.display) ? 'block' : 'none';
+// ---- keyboard toggles (AltGr-safe) ----
+document.addEventListener('keydown', (e) => {
+  // Don’t toggle while typing in fields
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+
+  const code = e.code;                 // physical key (layout-independent)
+  const key  = (e.key || '').toLowerCase();
+  const altGraph = e.getModifierState && e.getModifierState('AltGraph');
+  const wantA = code === 'KeyA' || key === 'a' || key === 'á';
+
+  // Preferred combos (avoid Ctrl+Alt to dodge AltGr)
+  const ctrlShiftA = !e.repeat && wantA && e.ctrlKey && e.shiftKey; // Ctrl+Shift+A
+  const altShiftA  = !e.repeat && wantA && e.altKey  && e.shiftKey; // Alt+Shift+A
+  const f2         = !e.repeat && (key === 'f2' || code === 'F2');   // F2
+  // Optional: AltGraph+Shift+A if you *want* an AltGr variation
+  const altGrShiftA = !e.repeat && wantA && altGraph && e.shiftKey;
+
+  if (ctrlShiftA || altShiftA || f2 || altGrShiftA) {
+    e.preventDefault();
+    const visibleNow = getComputedStyle(box).display !== 'none';
+    box.style.display = visibleNow ? 'none' : 'block';
     refresh();
   }
 });
+
+// ---- emergency fallback: double-press “A” within 400ms anywhere ----
+(() => {
+  let lastA = 0;
+  document.addEventListener('keydown', (e) => {
+    const code = e.code;
+    const key  = (e.key || '').toLowerCase();
+    const wantA = code === 'KeyA' || key === 'a' || key === 'á';
+    const typing = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable);
+    if (typing || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
+
+    const now = Date.now();
+    if (wantA && now - lastA < 400) {
+      e.preventDefault();
+      const visibleNow = getComputedStyle(box).display !== 'none';
+      box.style.display = visibleNow ? 'none' : 'block';
+      refresh();
+      lastA = 0;
+    } else if (wantA) {
+      lastA = now;
+    }
+  });
+})();
+
+
+
 
 
   // URL toggle ?author=1
@@ -1591,39 +1640,48 @@ function getClubColor(club){ return CLUB_COLORS[club] || null; }
 }
 
 
-  cv.addEventListener('click', (ev)=>{
-  if(!baseImg) return;
-  const {x, y} = screenToCanvasPoint(ev.clientX, ev.clientY);
+ cv.addEventListener('click', (ev) => {
+  if (!baseImg) return;
+  const { x, y } = screenToCanvasPoint(ev.clientX, ev.clientY);
 
+  // If tee+pin were preset by CSV, lock them and only allow adjusting/setting TARGET
+  if (lockTeePin && tee && pin) {
+    target = { x, y };
+    clickStatus.textContent = target ? 'SET' : 'TARGET';
+    redraw();
+    return;
+  }
 
-  if(!tee){
-    tee = {x,y};
+  // ---------- Original behaviour (for holes without presets) ----------
+  if (!tee) {
+    tee = { x, y };
     clickStatus.textContent = 'PIN';
-  } else if(!pin){
-    pin = {x,y};
+  } else if (!pin) {
+    pin = { x, y };
     clickStatus.textContent = 'TARGET';
-  } else if(!target){
-    target = {x,y};
+  } else if (!target) {
+    target = { x, y };
     clickStatus.textContent = 'SET';
   } else {
-  // If we’ve already hit at least one shot, a click sets a new TARGET for the next shot.
-  if (shots.length > 0) {
-    target = { x, y };
-    clickStatus.textContent = 'TARGET';
-  } else {
-    // Before any shots, allow moving the nearest of tee/pin/target
-    const dT = Math.hypot(x-tee.x,y-tee.y);
-    const dP = Math.hypot(x-pin.x,y-pin.y);
-    const dG = Math.hypot(x-target.x,y-target.y);
-    const min = Math.min(dT,dP,dG);
-    if(min===dT)      tee = {x,y};
-    else if(min===dP) pin = {x,y};
-    else              target = {x,y};
+    // If we’ve already hit at least one shot, a click sets a new TARGET for the next shot.
+    if (shots.length > 0) {
+      target = { x, y };
+      clickStatus.textContent = 'TARGET';
+    } else {
+      // Before any shots, allow moving the nearest of tee/pin/target
+      const dT = Math.hypot(x - tee.x, y - tee.y);
+      const dP = Math.hypot(x - pin.x, y - pin.y);
+      const dG = Math.hypot(x - target.x, y - target.y);
+      const min = Math.min(dT, dP, dG);
+      if (min === dT)      tee = { x, y };
+      else if (min === dP) pin = { x, y };
+      else                 target = { x, y };
+    }
   }
-}
 
   redraw();
 });
+
 // --- Mobile-friendly pan & pinch (Pointer Events) ---
 let isPanning = false;
 let panStart = {sx:0, sy:0, tx:0, ty:0};
@@ -1709,18 +1767,18 @@ cv.addEventListener('pointercancel', ()=>{
 });
 
 
-  $('clearBtn').addEventListener('click', ()=>{
-   shots.length = 0;
-tee = null;
-pin = null;
-target = null;
-clickStatus.textContent = 'TEE';
-clearOut();
-redraw();
-renderShotList();
+ $('clearBtn').addEventListener('click', () => {
+  shots.length = 0;
+  tee = null;
+  pin = null;
+  target = null;
+  lockTeePin = false; // unlock for next manual placement
+  clickStatus.textContent = 'TEE';
+  clearOut();
+  redraw();
+  renderShotList();
+});
 
-
-  });
 
 function redraw(){
   // background
@@ -1813,6 +1871,8 @@ if ((tee && target) || (shots.length > 0 && target)) {
     if(tee)    drawDot(tee.x, tee.y, '#22c55e', 6);
 if(pin)    drawDot(pin.x, pin.y, '#f59e0b', 6);
 if(target) drawDot(target.x, target.y, '#38bdf8', 6);
+// Distance badge next to the target (to Tee/Pin)
+drawTargetDistanceBadges();
 
 
     // shots
@@ -1979,6 +2039,65 @@ function drawYardMarkers(start, dir, pxPerYard, yardsTotal, tickEvery=10, labelE
     }
   }
 }
+function drawTargetDistanceBadges(){
+  if (!target || !pin) return;
+
+  // Start point = tee on 1st shot, otherwise last landing point
+  const hasShots = Array.isArray(shots) && shots.length > 0;
+  const start = hasShots ? shots[shots.length - 1] : tee;
+  if (!start) return; // safety
+
+  // yards-per-pixel from tee→pin vs hole yardage
+  const hole = parseFloat($('holeYards').value) || 0;
+  if (hole <= 0 || !tee || !pin) return;
+  const teeToPinPix = Math.hypot(pin.x - tee.x, pin.y - tee.y);
+  if (teeToPinPix <= 0) return;
+  const pxPerYard = teeToPinPix / hole;
+
+  // straight-line distances (yards)
+  const ydFromStart = Math.hypot(target.x - start.x, target.y - start.y) / pxPerYard;
+  const ydToPin     = Math.hypot(target.x - pin.x,   target.y - pin.y)   / pxPerYard;
+
+  // label strings (tee on 1st shot, "Last" thereafter)
+  const leftLabel = hasShots ? 'Target ↔ Last' : 'Target ↔ Tee';
+  const label1 = `${leftLabel}: ${fmt(ydFromStart,1)} yd`;
+  const label2 = `Target ↔ Pin: ${fmt(ydToPin,1)} yd`;
+
+  // badge placement (world space, follows zoom/pan)
+  const pad   = 6;
+  const lineH = 16;
+  const x0    = target.x + 12; // offset to the right of the target dot
+  const y0    = target.y - 12; // and slightly above
+
+  ctx.save();
+  ctx.font = '12px system-ui, Segoe UI, Roboto';
+  ctx.textBaseline = 'top';
+  const w = Math.max(ctx.measureText(label1).width, ctx.measureText(label2).width) + pad*2;
+  const h = lineH*2 + pad*2;
+
+  // keep badge inside canvas a bit
+  const maxX = cv.width  - 6;
+  const minX = 6;
+  const maxY = cv.height - 6;
+  const minY = 6;
+  let bx = Math.min(Math.max(x0, minX), maxX - w);
+  let by = Math.min(Math.max(y0 - h, minY), maxY - h);
+
+  // panel
+  ctx.fillStyle   = 'rgba(10,20,34,0.75)';
+  ctx.strokeStyle = 'rgba(36,49,68,0.9)';
+  ctx.lineWidth   = 1;
+  if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(bx, by, w, h, 8); ctx.fill(); ctx.stroke(); }
+  else { ctx.fillRect(bx, by, w, h); ctx.strokeRect(bx, by, w, h); }
+
+  // text
+  ctx.fillStyle = '#e5e7eb';
+  ctx.fillText(label1, bx + pad, by + pad);
+  ctx.fillText(label2, bx + pad, by + pad + lineH);
+  ctx.restore();
+}
+
+
 function bearingDeg(ax, ay, bx, by){
   // 0° = North (up), 90° = East (right), clockwise positive
   const dx = bx - ax, dy = by - ay;
