@@ -290,12 +290,71 @@ canvas{display:block;width:100%;height:auto;background:#000;border-radius:14px;b
 .delShotClub:hover {
   opacity: 1;
 }
+/* 1) Center the existing hole label at the very top of the right card */
+.right { position: relative; }                /* doesn't change layout, just allows absolute children */
+#holeLabel{
+  position: absolute;
+  top: 8px;                                   /* adjust if you want it a hair higher/lower */
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 700;
+  color: var(--ink);
+}
+#holeLabel .muted{ color: var(--muted); font-weight: 600; }
+
+/* 2) Put the two distance rows on the same line (desktop/wide only) */
+.right .grid{
+  grid-template-columns: 1fr 1fr;             /* ensure two columns exist */
+}
+.right .grid > .row:has(#holeYards){
+  grid-column: 1;
+  grid-row: 1;
+  margin-top: 18px; 
+}
+.right .grid > .row:has(#totalYards){
+  grid-column: 2;
+  grid-row: 1;
+  margin-top: 18px;                           /* nudges it down slightly to align labels */
+}
+
+/* On narrow screens, fall back to stacking (no change to your mobile layout) */
+@media (max-width: 720px){
+  .right .grid > .row:has(#holeYards),
+  .right .grid > .row:has(#totalYards){
+    grid-column: auto;
+    grid-row: auto;
+    margin-top: 8px;
+  }
+}
+/* Align the two yardage fields side by side and perfectly aligned */
+.yardage-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;  /* ensures labels and inputs line up cleanly */
+}
+
+.yardage-row .field {
+  flex: 1;
+}
+
+.yardage-row label {
+  display: block;
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.yardage-row input {
+  width: 100%;
+}
+
 
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>GIR Drivng Range</h1>
+  <h1>GIR Driving Range</h1>
 
   <div class="flex">
     <!-- Canvas/Image side -->
@@ -361,7 +420,8 @@ canvas{display:block;width:100%;height:auto;background:#000;border-radius:14px;b
 
 
 
-          <label>Hole / Target distance (yards)</label>
+        <label for="holeYards">Hole / Target distance (yards)</label>
+
           <input id="holeYards" type="number" value="350" min="1" step="1">
         </div>
         <div class="row">
@@ -407,16 +467,21 @@ canvas{display:block;width:100%;height:auto;background:#000;border-radius:14px;b
 </div>
 
         <div class="row">
-          <label>Finished lateral from target line (meters)</label>
-          <div class="row-inline">
-            <input id="finishLatM" type="number" step="0.1" placeholder="e.g. 18" style="flex:2">
-            <select id="finishSide" style="flex:1">
-              <option value="R">Right</option>
-              <option value="L">Left</option>
-            </select>
-          </div>
-          <div class="muted">If set, this overrides the angle for drawing.</div>
-        </div>
+  <label>Finished lateral from target line</label>
+  <div class="row-inline">
+    <input id="finishLatM" type="number" step="0.1" placeholder="e.g. 60" style="flex:2">
+    <select id="finishUnit" style="flex:0.8">
+      <option value="ft" selected>ft</option>
+      <option value="m">m</option>
+    </select>
+    <select id="finishSide" style="flex:1">
+      <option value="R">Right</option>
+      <option value="L">Left</option>
+    </select>
+  </div>
+  <div class="muted">If set, this overrides the angle for drawing.</div>
+</div>
+
       </div>
 
       <div class="row">
@@ -680,6 +745,20 @@ function rowsForCourse(name) {
 
   return rows;
 }
+// Write the current hole's shot count into the scorecard (blank if 0)
+function writeShotsToScorecardForCurrentHole() {
+  if (!currentCourse) return;
+  const rows = rowsForCourse(currentCourse);
+  if (!rows.length) return;
+
+  const row = rows[currentHoleIndex];      // current hole row
+  const holeIdx = (row.hole | 0) - 1;      // 0-based score array index
+  const count = Array.isArray(shots) ? shots.length : 0;
+
+  score[holeIdx].strokes = count > 0 ? count : '';
+  saveCurrentScorecard();
+  renderScorecard();
+}
 
 function baseCourseName(name){
   if (!name) return '';
@@ -891,14 +970,20 @@ lockTeePin = (hasTee && hasPin);
 
 }
 
-// Next hole (wraps to start of the same course)
+// Next hole (wraps to start of the same course) + save strokes first
 function goToNextHole() {
   if (!currentCourse) return;
   const rows = rowsForCourse(currentCourse);
   if (!rows.length) return;
+
+  // NEW: record how many shots were taken on the current hole
+  writeShotsToScorecardForCurrentHole();
+
+  // Now advance to the next hole (applyHoleByIndex will clear shots, etc.)
   const nextIdx = (currentHoleIndex + 1) % rows.length;
-  applyHoleByIndex(currentCourse, nextIdx); // applyHoleByIndex will randomize wind
+  applyHoleByIndex(currentCourse, nextIdx); // applies wind randomization too
 }
+
 
 
 
@@ -2104,9 +2189,11 @@ drawTargetDistanceBadges();
 
   // Lateral input: finish lateral (m) OR angle (deg)
   const ang = parseFloat($('angleDeg').value);
-  const angSide = $('angleSide').value;
-  const latM = parseFloat($('finishLatM').value);
-  const latSide = $('finishSide').value;
+const angSide = $('angleSide').value;
+const latRaw = parseFloat($('finishLatM').value);
+const latUnit = ($('finishUnit') && $('finishUnit').value) || 'ft';
+const latSide = $('finishSide').value;
+
 
   let theta = Number.isFinite(ang) ? (angSide==='L'? -ang : +ang) : NaN;
   const rad = Number.isFinite(theta) ? theta*Math.PI/180 : NaN;
@@ -2114,13 +2201,15 @@ drawTargetDistanceBadges();
 
   // Default to original behavior: finish lateral overrides angle if provided
   let y_yd;
-  if (Number.isFinite(latM)) {
-    y_yd = (latSide==='L' ? -latM : +latM) * (1/0.9144);
-  } else if (Number.isFinite(y_from_angle_yd)) {
-    y_yd = y_from_angle_yd;
-  } else {
-    return; // nothing to preview without lateral or angle
-  }
+if (Number.isFinite(latRaw)) {
+  const latYd = (latUnit === 'm') ? (latRaw * m2yd) : (latRaw / 3); // ft → yd
+  y_yd = (latSide === 'L' ? -latYd : +latYd);
+} else if (Number.isFinite(y_from_angle_yd)) {
+  y_yd = y_from_angle_yd;
+} else {
+  return; // nothing to preview without lateral or angle
+}
+
 
   // Guard: lateral cannot exceed shot distance
   const yAbs = Math.abs(y_yd);
@@ -2395,7 +2484,7 @@ function drawCompassOverlay(ctx, aimBearing, windFromDeg, windSpeed){
   ctx.fillStyle = '#a3b2c7';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillText(`${windSpeed || 0} mph`, x0 - 2, y0 + size + 6);
+  
 
   // speed + description text (inline)
 let desc = '';
@@ -2428,9 +2517,11 @@ const R = parseFloat($('totalYards').value);
 
 
     const ang = parseFloat($('angleDeg').value);
-    const angSide = $('angleSide').value;
-    const latM = parseFloat($('finishLatM').value);
-    const latSide = $('finishSide').value;
+const angSide = $('angleSide').value;
+const latRaw = parseFloat($('finishLatM').value);
+const latUnit = ($('finishUnit') && $('finishUnit').value) || 'ft';
+const latSide = $('finishSide').value;
+
 
     if(!Number.isFinite(hole) || !Number.isFinite(R) || R<=0){
       line('Enter hole distance and total shot distance.', 'err');
@@ -2442,16 +2533,19 @@ const R = parseFloat($('totalYards').value);
     const y_from_angle_yd = Number.isFinite(rad) ? (R*Math.sin(rad)) : NaN;
 
     // Choose final lateral
-    let y_yd, usedFinish = false;
-    if(Number.isFinite(latM)){
-      y_yd = (latSide==='L' ? -latM : +latM) * m2yd;
-      usedFinish = true;
-    } else if(Number.isFinite(y_from_angle_yd)){
-      y_yd = y_from_angle_yd;
-    } else {
-      line('Enter a launch angle or a finish lateral (meters).', 'err');
-      return;
-    }
+   let y_yd, usedFinish = false;
+if (Number.isFinite(latRaw)) {
+  const latYd = (latUnit === 'm') ? (latRaw * m2yd) : (latRaw / 3); // ft → yd
+  y_yd = (latSide === 'L' ? -latYd : +latYd);
+  usedFinish = true;
+} else if (Number.isFinite(y_from_angle_yd)) {
+  y_yd = y_from_angle_yd;
+} else {
+  line('Enter a launch angle or a finish lateral (ft or m).', 'err');
+
+  return;
+}
+
 
     const yAbs = Math.abs(y_yd);
     if(yAbs > R){
@@ -2549,10 +2643,12 @@ line(
     // Store & draw shot
 const club = ($('clubSelect') && $('clubSelect').value) || '';
 const color = getClubGroupColor(club) || shotColors[shotIndex++ % shotColors.length];
-shots.push({
 
+// Create a stable id for this shot so deletes can sync with the log
+const shotId = (Date.now().toString(36) + Math.random().toString(36).slice(2));
 
-
+const shot = {
+  id: shotId,
   x: land.x,
   y: land.y,
   color,
@@ -2561,21 +2657,9 @@ shots.push({
   shortLongYd: dx_to_pin_yd,  // +short / −long (relative to pin)
   leftRightYd: y_rel_pin_yd,  // +Right / −Left (relative to pin)
   distToPinYd: dist_to_pin_yd
-});
-// Create a stable id for this shot so deletes can sync with the log
-const shotId = (Date.now().toString(36) + Math.random().toString(36).slice(2));
+};
 
-shots.push({
-  id: shotId,
-  x: land.x,
-  y: land.y,
-  color,
-  club,
-  totalYards: R,
-  shortLongYd: dx_to_pin_yd,
-  leftRightYd: y_rel_pin_yd,
-  distToPinYd: dist_to_pin_yd
-});
+shots.push(shot);
 
 // Also save to the persistent club log
 addShotToLog({ id: shotId, club, totalYards: R });
@@ -2583,6 +2667,7 @@ addShotToLog({ id: shotId, club, totalYards: R });
 redraw();
 renderShotList();
 clickStatus.textContent = 'TARGET';
+
 
 });
 
