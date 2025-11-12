@@ -452,7 +452,9 @@ canvas{display:block;width:100%;height:auto;background:#000;border-radius:14px;b
       <option value="AW">Gap Wedge</option>
       <option value="SW">Sand Wedge</option>
       <option value="LW">Lob Wedge</option>
-    </select>
+     <option value="Chipper">Chipper</option>
+  <option value="Chip/Pitch Shot">Chip/Pitch Shot</option>
+</select>
     <span class="muted" style="align-self:center;white-space:nowrap;">)</span>
   </div>
 
@@ -512,6 +514,19 @@ canvas{display:block;width:100%;height:auto;background:#000;border-radius:14px;b
   const $ = (id)=>document.getElementById(id);
   const fmt = (n,d=1)=>Number.isFinite(n)?n.toFixed(d):'—';
   const out = $('out');
+  // --- Special random yardage for a specific course ---
+const SPECIAL_COURSE_RANDOM = 'masturbatorium g&cc';
+
+function randomIntInclusive(min, max){
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// If the selected course matches, return a random yardage; otherwise null
+function maybeRandomHoleYards(courseName){
+  const base = baseCourseName(courseName || '').toLowerCase();
+  return (base === SPECIAL_COURSE_RANDOM) ? randomIntInclusive(50, 135) : null;
+}
+
   // --- Temporary scroll lock while dragging the target
 let _scrollLock = 0;
 function lockScroll(){
@@ -916,9 +931,18 @@ function applyHoleByIndex(courseName, index) {
   // UI selects
   courseSelect.value = courseName;
   holeSelect.value = String(row.hole);
+  // Choose club set by course base name
+  {
+    const baseName = baseCourseName(courseName).toLowerCase();
+    buildClubSelect(baseName === 'wedge practice' ? 'wedgePractice' : 'default');
+  }
 
   // Set hole distance (yards) input
-  $('holeYards').value = row.yards || '';
+  let yards = row.yards || '';
+const rnd = maybeRandomHoleYards(courseName);
+if (rnd !== null) yards = rnd;
+$('holeYards').value = yards;
+
 
 // --- Update par + hole label + scroll ---
 if (typeof score !== 'undefined' && Array.isArray(score)) {
@@ -946,11 +970,12 @@ if (holeLabel) {
   holeLabel.textContent = `Hole ${row.hole} (${row.par || '-'} par)`;
 }
 
-// Also update the yardage box correctly
+// Also update the yardage box correctly (respect special-course random)
 const holeYardsInput = document.getElementById('holeYards');
 if (holeYardsInput) {
-  holeYardsInput.value = row.yards || '';
+  holeYardsInput.value = yards; // uses the 'yards' we set above
 }
+
 
 randomizeWind(); // new wind each time a hole is applied
 
@@ -1622,6 +1647,9 @@ if (firstCourse) {
   currentCourse = firstCourse;
 fillHoleMenu(currentCourse);
 preloadAllParsForCourse(currentCourse);   // ensure both 9s populate
+  const baseNameInit = baseCourseName(currentCourse).toLowerCase();
+buildClubSelect(baseNameInit === 'wedge practice' ? 'wedgePractice' : 'default');
+
 applyHoleByIndex(currentCourse, 0);
 
 }
@@ -1903,16 +1931,44 @@ const GROUP_COLORS = {
   Iron:   '#38bdf8', // sky
   Wedge:  '#14b8a6'  // teal
 };
+  // ---- Per-course club sets ----
+const CLUB_SETS = {
+  default: [
+    'Driver','3W','5W','7W','9W',
+    '3H','4H','5H',
+    '4I','5I','6I','7I','8I','9I',
+    'PW','AW','SW','LW',
+    'Chipper','Chip/Pitch Shot'
+  ],
+  wedgePractice: [
+    // Example wedge-only practice set
+    'PW','PW-1','PW-2','PW-3',
+    'GW','GW-1','GW-2','GW-3',
+    'SW','SW-1','SW-2','SW-3',
+    'LW','LW-1','LW-2','LW-3',
+    'Chipper', 'CH-1','CH-2','CH-3',
+  ]
+};
+
+function prettyClubName(v){ return v.replace(/-/g,' '); }
+
 // Return one of: 'Driver' | 'Wood' | 'Iron' | 'Wedge' | null
 function clubGroup(club){
   if(!club) return null;
   const c = club.toUpperCase();
-  if(c === 'DRIVER') return 'Driver';
-  if(/^(\d+)W$/.test(c) || /^(\d+)H$/.test(c)) return 'Wood';   // Woods + Hybrids
-  if(/^[4-9]I$/.test(c)) return 'Iron';
-  if(/^(PW|AW|SW|LW)$/.test(c)) return 'Wedge';
+
+  if (c === 'DRIVER') return 'Driver';
+  if (/^(\d+)W$/.test(c) || /^(\d+)H$/.test(c)) return 'Wood'; // Woods + Hybrids
+  if (/^[4-9]I$/.test(c)) return 'Iron';
+
+  // Any of these prefixes (optionally with -#) count as Wedge
+  if (/^(PW|AW|GW|SW|LW)(-\d+)?$/.test(c)) return 'Wedge';
+  if (c === 'CHIPPER' || c === 'CHIP/PITCH SHOT') return 'Wedge';
+
   return null;
 }
+
+
 function getClubGroupColor(club){
   const grp = clubGroup(club);
   return grp ? GROUP_COLORS[grp] : null;
@@ -1935,6 +1991,18 @@ function colorizeClubOptions(){
     }
   }
 }
+  function buildClubSelect(setKey = 'default'){
+  const sel = document.getElementById('clubSelect');
+  if (!sel) return;
+
+  const list = CLUB_SETS[setKey] || CLUB_SETS.default;
+  sel.innerHTML = '<option value="">Select club (optional)</option>' +
+    list.map(v => `<option value="${v}">${prettyClubName(v)}</option>`).join('');
+
+  // re-apply coloring dots to the rebuilt list
+  colorizeClubOptions();
+}
+
 colorizeClubOptions();
 
 // Consistent colors per club (used if a club is selected)
@@ -2949,6 +3017,9 @@ function drawDispersion(title, rows){
         <option value="AW">Gap Wedge</option>
         <option value="SW">Sand Wedge</option>
         <option value="LW">Lob Wedge</option>
+        <option value="Chipper">Chipper</option>
+<option value="Chip/Pitch Shot">Chip/Pitch Shot</option>
+
         <option value="__NONE__">(Unspecified)</option>
       </select>
     </div>
