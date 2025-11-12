@@ -544,10 +544,17 @@ function loadShotLog(){
 function saveShotLog(){
   try { localStorage.setItem(LS_SHOT_LOG, JSON.stringify(shotLog)); } catch {}
 }
-function addShotToLog(entry){ // {id, club, totalYards}
-  shotLog.push({ id: entry.id, club: entry.club || '__NONE__', totalYards: +entry.totalYards || 0, ts: Date.now() });
+function addShotToLog(entry){ // {id, club, totalYards, finishLatYdTarget}
+  shotLog.push({
+    id: entry.id,
+    club: entry.club || '__NONE__',
+    totalYards: +entry.totalYards || 0,
+    finishLatYdTarget: Number.isFinite(+entry.finishLatYdTarget) ? +entry.finishLatYdTarget : null,
+    ts: Date.now()
+  });
   saveShotLog();
 }
+
 function removeShotFromLog(id){
   const i = shotLog.findIndex(s => s.id === id);
   if (i >= 0){ shotLog.splice(i,1); saveShotLog(); }
@@ -556,24 +563,39 @@ function resetShotLog(){
   shotLog = []; saveShotLog();
 }
 
-// compute map {club: {count, avg, sum}}
+// L/R text helper used in tables (12L / 24R / 0 / —)
+function lrText(v){
+  if (!Number.isFinite(v)) return '—';
+  const n = Math.round(Math.abs(v));
+  if (n === 0) return '0';
+  return v < 0 ? `${n}L` : `${n}R`;
+}
+
+// compute map {club: {count, sum, countLR, sumLR}}
 function calcClubStats(list = shotLog){
   const map = {};
   for (const s of list){
     const c = s.club || '__NONE__';
-    if (!map[c]) map[c] = { count: 0, sum: 0 };
+    if (!map[c]) map[c] = { count: 0, sum: 0, countLR: 0, sumLR: 0 };
     if (Number.isFinite(+s.totalYards) && +s.totalYards > 0){
       map[c].count++;
       map[c].sum += +s.totalYards;
+    }
+    if (Number.isFinite(+s.finishLatYdTarget)){
+      map[c].countLR++;
+      map[c].sumLR += +s.finishLatYdTarget; // signed mean
     }
   }
   const out = Object.entries(map).map(([club, v]) => ({
     club: club === '__NONE__' ? '(Unspecified)' : club,
     count: v.count,
-    avg: v.count ? (v.sum / v.count) : 0
+    avg: v.count ? (v.sum / v.count) : 0,
+    avgLR: v.countLR ? (v.sumLR / v.countLR) : NaN
   })).sort((a,b)=> a.club.localeCompare(b.club));
   return out;
 }
+
+
 // ===== Club Data Modal UI =====
 const clubUI = {
   btn: null, backdrop: null, modal: null, filter: null,
@@ -613,38 +635,60 @@ function initClubUI(){
 function renderClubModal(){
   // Summary table (all clubs)
   const stats = calcClubStats();
-  clubUI.sumBody.innerHTML = stats.length
-    ? stats.map(s => `<tr><td>${s.club}</td><td>${s.count}</td><td>${s.avg.toFixed(1)}</td></tr>`).join('')
-    : `<tr><td colspan="3" style="color:#a3b2c7">No shots logged yet.</td></tr>`;
+clubUI.sumBody.innerHTML = stats.length
+  ? stats.map(s => `
+      <tr>
+        <td>${s.club}</td>
+        <td>${s.count}</td>
+        <td>${s.avg.toFixed(1)}</td>
+        <td>
+          <button class="lrOpen" data-club="${s.club === '(Unspecified)' ? '__NONE__' : s.club}"
+                  style="background:#0a1422;border:1px solid #243144;color:#cbd5e1;padding:4px 8px;border-radius:8px;cursor:pointer">
+            ${lrText(s.avgLR)}
+          </button>
+        </td>
+      </tr>
+    `).join('')
+  : `<tr><td colspan="4" style="color:#a3b2c7">No shots logged yet.</td></tr>`;
+
+
 
   // Filtered list
-  const sel = clubUI.filter.value;
-  const filtered = shotLog
-    .filter(s => sel === '__ALL__' ? true : (sel === '__NONE__' ? s.club === '__NONE__' : s.club === sel))
-    .slice().sort((a,b)=> b.ts - a.ts);
+ const sel = clubUI.filter.value;
+const filtered = shotLog
+  .filter(s => sel === '__ALL__' ? true : (sel === '__NONE__' ? s.club === '__NONE__' : s.club === sel))
+  .slice().sort((a,b)=> b.ts - a.ts);
 
-  // Average badge for selected filter
-  if (filtered.length){
-    const avg = filtered.reduce((t,s)=> t + (+s.totalYards || 0), 0) / filtered.length;
-    clubUI.avgBadge.textContent = `${sel==='__ALL__' ? 'All' : (sel==='__NONE__' ? 'Unspecified' : sel)} avg: ${avg.toFixed(1)} yd`;
-  } else {
-    clubUI.avgBadge.textContent = '—';
-  }
+if (filtered.length){
+  const avgDist = filtered.reduce((t,s)=> t + (+s.totalYards || 0), 0) / filtered.length;
+  const lrVals  = filtered.map(s => +s.finishLatYdTarget).filter(Number.isFinite);
+  const avgLR   = lrVals.length ? (lrVals.reduce((t,v)=> t+v, 0) / lrVals.length) : NaN;
+  clubUI.avgBadge.textContent =
+    `${sel==='__ALL__' ? 'All' : (sel==='__NONE__' ? 'Unspecified' : sel)} avg: ${avgDist.toFixed(1)} yd • L/R: ${lrText(avgLR)}`;
+} else {
+  clubUI.avgBadge.textContent = '—';
+}
 
-  clubUI.list.innerHTML = filtered.length
-    ? filtered.map(s => {
-        const when = new Date(s.ts).toLocaleString();
-        const clubLabel = s.club === '__NONE__' ? '(Unspecified)' : s.club;
-        return `<div class="item" data-id="${s.id}">
-          <span>${clubLabel}</span>
-          <span>
-            <b>${(+s.totalYards||0).toFixed(1)} yd</b>
-            &nbsp;<span class="muted">${when}</span>
-            <span class="delShotClub" title="Delete shot">×</span>
-          </span>
-        </div>`;
-      }).join('')
-    : `<div class="item" style="justify-content:center;color:#a3b2c7">No shots for this filter.</div>`;
+
+
+ clubUI.list.innerHTML = filtered.length
+  ? filtered.map(s => {
+      const when = new Date(s.ts).toLocaleString();
+      const clubLabel = s.club === '__NONE__' ? '(Unspecified)' : s.club;
+      const lr = lrText(s.finishLatYdTarget);
+      return `<div class="item" data-id="${s.id}">
+        <span>${clubLabel}</span>
+        <span>
+          <b>${(+s.totalYards||0).toFixed(1)} yd</b>
+          &nbsp;•&nbsp;<b>L/R: ${lr}</b>
+          &nbsp;<span class="muted">${when}</span>
+          <span class="delShotClub" title="Delete shot">×</span>
+        </span>
+      </div>`;
+    }).join('')
+  : `<div class="item" style="justify-content:center;color:#a3b2c7">No shots for this filter.</div>`;
+
+
 
   // Attach delete handlers
   clubUI.list.querySelectorAll('.delShotClub').forEach(btn => {
@@ -656,6 +700,15 @@ function renderClubModal(){
       renderClubModal();
     };
   });
+  // Open dispersion when clicking Avg L/R
+clubUI.sumBody.querySelectorAll('.lrOpen').forEach(btn=>{
+  btn.onclick = () => {
+    const clubKey = btn.dataset.club;
+    const data = shotLog.filter(s => (clubKey === '__NONE__' ? s.club === '__NONE__' : s.club === clubKey));
+    openDispersionModal(clubKey, data);
+  };
+});
+
 }
 
 
@@ -2401,48 +2454,88 @@ function bearingDeg(ax, ay, bx, by){
 }
 
 function drawCompassOverlay(ctx, aimBearing, windFromDeg, windSpeed){
-  // Draw in screen-space (no zoom/pan)
+  // Always draw in screen space
   ctx.setTransform(1,0,0,1,0,0);
 
-  const size = 90;      // panel inner size
-  const pad  = 10;      // margin from top-left
-  const r    = 30;      // compass radius
-  const x0   = pad + 8; // panel x
-  const y0   = pad + 8; // panel y
+  // Map CSS px → canvas px so size is fixed on screen
+  const rect = cv.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const cssToCanvas = cv.width / rect.width;
 
-  // Panel (rounded if supported)
+  // ---- Tweak these for final size/placement (in CSS px) ----
+  const SIZE_CSS = 50;           // inner square side on screen (try 60–80)
+  const PAD_CSS  = 10;           // distance from canvas edges
+  const CORNER   = 10;           // panel corner radius
+  // ----------------------------------------------------------
+
+  // Convert to canvas px
+  const sizePx = SIZE_CSS * cssToCanvas;
+  const padPx  = PAD_CSS  * cssToCanvas;
+  const cornerPx = CORNER * cssToCanvas;
+
+  // Top-left position
+  const xCanvas = padPx + 8 * cssToCanvas;
+  const yCanvas = padPx + 8 * cssToCanvas;
+
+  // ---- Normalized drawing space (base 100x100 units) ----
+  const BASE = 100;                      // design units
+  const scale = sizePx / BASE;           // scale → desired on-screen size
+  const r = 36;                          // compass radius in BASE units
+  const nFont = 14;                      // "N" font in BASE units
+  const mphFont = 12;                    // speed text font in BASE units
+
+  // Helper to draw a rounded rect in current space
+  function rr(x, y, w, h, rad){
+    const r = Math.min(rad, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y);
+    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+    ctx.lineTo(x+w, y+h-r);
+    ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    ctx.lineTo(x+r, y+h);
+    ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+    ctx.lineTo(x, y+r);
+    ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.closePath();
+  }
+
+  ctx.save();
+  // Move to top-left, then scale to our design space
+  ctx.translate(xCanvas, yCanvas);
+  ctx.scale(scale, scale);
+
+  // Panel (slightly larger than BASE to include padding like your original)
   ctx.fillStyle = 'rgba(10,20,34,0.7)';
   ctx.strokeStyle = 'rgba(36,49,68,0.9)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(x0-8, y0-16, size+32, size+34, 10);
-  else ctx.rect(x0-8, y0-16, size+32, size+34);
+  ctx.lineWidth = 1 / scale; // keep a crisp 1px outline on screen
+  rr(-8, -16, BASE + 32, BASE + 34, (cornerPx / scale));
   ctx.fill(); ctx.stroke();
 
-  // Compass ring
+  // Compass ring (centered)
+  const cx = BASE/2, cy = BASE/2;
   ctx.beginPath();
-  ctx.arc(x0 + size/2, y0 + size/2, r, 0, Math.PI*2);
+  ctx.arc(cx, cy, r, 0, Math.PI*2);
   ctx.strokeStyle = '#e2e8f0';
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1 / scale;
   ctx.stroke();
 
-  // N label
+  // "N" label
   ctx.fillStyle = '#e2e8f0';
-  ctx.font = '12px system-ui, Segoe UI, Roboto';
+  ctx.font = `${nFont}px system-ui, Segoe UI, Roboto`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('N', x0 + size/2, y0 + size/2 - r - 10);
+  ctx.fillText('N', cx, cy - r - 8);
 
   // Aim arrow (laser green)
   if (Number.isFinite(aimBearing)){
     const rad = aimBearing * Math.PI/180;
-    const cx = x0 + size/2, cy = y0 + size/2;
-    const len = r - 6;
     const ex = Math.sin(rad), ey = -Math.cos(rad);
+    const len = r - 10;
     ctx.strokeStyle = '#22ff88';
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 2.5 / scale;
     ctx.shadowColor = '#22ff88';
-    ctx.shadowBlur = 6;
+    ctx.shadowBlur = 6 / scale;
     ctx.beginPath();
     ctx.moveTo(cx - ex*10, cy - ey*10);
     ctx.lineTo(cx + ex*len, cy + ey*len);
@@ -2457,16 +2550,16 @@ function drawCompassOverlay(ctx, aimBearing, windFromDeg, windSpeed){
     ctx.closePath(); ctx.fill();
   }
 
-  // Wind arrow (FROM → draw TO direction)
+  // Wind arrow (FROM → draw TO)
   if (Number.isFinite(windFromDeg) && (windSpeed ?? 0) >= 0){
     const toDeg = (windFromDeg + 180) % 360;
     const rad = toDeg * Math.PI/180;
-    const cx = x0 + size/2, cy = y0 + size/2;
-    const len = r - 14;
     const ex = Math.sin(rad), ey = -Math.cos(rad);
+    const len = r - 14;
+
     ctx.strokeStyle = '#7dd3fc';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([3,3]);
+    ctx.lineWidth = 2 / scale;
+    ctx.setLineDash([3/scale, 3/scale]);
     ctx.beginPath();
     ctx.moveTo(cx - ex*8, cy - ey*8);
     ctx.lineTo(cx + ex*len, cy + ey*len);
@@ -2480,29 +2573,24 @@ function drawCompassOverlay(ctx, aimBearing, windFromDeg, windSpeed){
     ctx.lineTo(cx + ex*(len-7) - ey*4, cy + ey*(len-7) + ex*4);
     ctx.closePath(); ctx.fill();
 
-      // speed + description text
-  ctx.fillStyle = '#a3b2c7';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'alphabetic';
-  
+    // Speed text under panel
+    let desc = '';
+    if (windSpeed < 4) desc = 'Calm';
+    else if (windSpeed < 8) desc = 'Light breeze';
+    else if (windSpeed < 15) desc = 'Breezy';
+    else if (windSpeed < 20) desc = 'Windy';
+    else desc = 'Strong gusts';
 
-  // speed + description text (inline)
-let desc = '';
-if (windSpeed < 4) desc = 'Calm';
-else if (windSpeed < 8) desc = 'Light breeze';
-else if (windSpeed < 15) desc = 'Breezy';
-else if (windSpeed < 20) desc = 'Windy';
-else desc = 'Strong gusts';
-
-ctx.fillStyle = '#a3b2c7';
-ctx.textAlign = 'left';
-ctx.textBaseline = 'alphabetic';
-ctx.font = '12px system-ui, Segoe UI, Roboto';
-ctx.fillText(`${windSpeed || 0} mph – ${desc}`, x0 - 2, y0 + size + 6);
-
-
+    ctx.fillStyle = '#a3b2c7';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = `${mphFont}px system-ui, Segoe UI, Roboto`;
+    ctx.fillText(`${windSpeed || 0} mph – ${desc}`, -2, BASE + 8);
   }
+
+  ctx.restore();
 }
+
 
   // ---------- math & plotting ----------
   $('calcBtn').addEventListener('click', ()=>{
@@ -2640,7 +2728,7 @@ line(
 );
 
 
-    // Store & draw shot
+   // Store & draw shot
 const club = ($('clubSelect') && $('clubSelect').value) || '';
 const color = getClubGroupColor(club) || shotColors[shotIndex++ % shotColors.length];
 
@@ -2654,25 +2742,179 @@ const shot = {
   color,
   club,
   totalYards: R,
-  shortLongYd: dx_to_pin_yd,  // +short / −long (relative to pin)
-  leftRightYd: y_rel_pin_yd,  // +Right / −Left (relative to pin)
-  distToPinYd: dist_to_pin_yd
+  shortLongYd: dx_to_pin_yd,   // +short / −long (relative to pin)
+  leftRightYd: y_rel_pin_yd,   // +Right / −Left (relative to pin)
+  distToPinYd: dist_to_pin_yd,
+  // NEW: finished lateral vs TARGET line (signed; Right=+ , Left=−)
+  finishLatYdTarget: y_yd
 };
 
+
+// IMPORTANT: push to the array so it actually plots
 shots.push(shot);
 
-// Also save to the persistent club log
-addShotToLog({ id: shotId, club, totalYards: R });
+// Persist to club log (includes signed L/R)
+addShotToLog({ id: shotId, club, totalYards: R, finishLatYdTarget: y_yd });
 
+// Repaint UI
 redraw();
 renderShotList();
 clickStatus.textContent = 'TARGET';
+
 
 
 });
 
 // end IIFE
 })();
+function openDispersionModal(clubKey, rows){
+  const back  = document.getElementById('dispBackdrop');
+  const title = document.getElementById('dispTitle');
+  const meta  = document.getElementById('dispMeta');
+  const close = document.getElementById('dispClose');
+
+  if (!back) return; // safety if HTML missing
+
+  // Wire once (in case this runs before the HTML existed earlier)
+  if (back.dataset.wired !== '1'){
+    if (close) close.onclick = () => { back.style.display = 'none'; };
+    back.addEventListener('click', (e) => {
+      if (e.target === back) back.style.display = 'none';
+    });
+    back.dataset.wired = '1';
+  }
+
+  const clubLabel = (clubKey === '__NONE__' ? '(Unspecified)' : clubKey);
+  if (title) title.textContent = `Shot Dispersion — ${clubLabel}`;
+  if (meta)  meta.textContent  = rows?.length ? `${rows.length} shots` : 'No shots';
+
+  back.style.display = 'flex';
+  drawDispersion(clubLabel, rows || []);
+}
+
+
+// (init moved into openDispersionModal so wiring always happens after HTML exists)
+
+
+function drawDispersion(title, rows){
+  const cv = document.getElementById('dispCanvas');
+  const ctx = cv.getContext('2d');
+
+  // HiDPI sizing
+  const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+  const cssW = cv.clientWidth || 680;
+  const cssH = Math.round(cssW * 0.6);
+  cv.style.height = cssH + 'px';
+  cv.width = Math.round(cssW * dpr);
+  cv.height = Math.round(cssH * dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+
+  // Points: x = finishLatYdTarget (signed L/R), y = totalYards
+  const pts = rows
+    .map(s => ({ x:+s.finishLatYdTarget, y:+s.totalYards }))
+    .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
+
+  // Ranges
+  let maxAbsX = 20, minY = 0, maxY = 50;
+  if (pts.length){
+    maxAbsX = Math.max(10, Math.ceil(Math.max(...pts.map(p => Math.abs(p.x))) / 5) * 5 + 5);
+    minY = Math.floor((Math.min(...pts.map(p => p.y)) - 5) / 5) * 5;
+    maxY = Math.ceil((Math.max(...pts.map(p => p.y)) + 5) / 5) * 5;
+  }
+  const padL = 48, padR = 16, padT = 24, padB = 36;
+
+  // World→screen
+  function x2px(x){ return padL + ( (x + maxAbsX) / (2*maxAbsX) ) * (cv.width/dpr - padL - padR); }
+  function y2px(y){ return (cv.height/dpr - padB) - ((y - minY) / (maxY - minY)) * (cv.height/dpr - padT - padB); }
+
+  // Background
+  ctx.fillStyle = '#0a1422';
+  ctx.fillRect(0,0,cv.width/dpr, cv.height/dpr);
+
+  // Grid: target line x=0 and 10-yd horizontals
+  ctx.strokeStyle = '#243144';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  const x0 = x2px(0);
+  ctx.moveTo(x0, padT); ctx.lineTo(x0, cv.height/dpr - padB);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#1b2638';
+  ctx.beginPath();
+  for (let y= Math.ceil(minY/10)*10; y<=maxY; y+=10){
+    const py = y2px(y);
+    ctx.moveTo(padL, py); ctx.lineTo(cv.width/dpr - padR, py);
+  }
+  ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#a3b2c7';
+  ctx.font = '12px system-ui, Segoe UI, Roboto';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let y= Math.ceil(minY/10)*10; y<=maxY; y+=10){
+    const py = y2px(y);
+    ctx.fillText(`${y}`, padL - 6, py);
+  }
+  ctx.textAlign = 'center';
+  ctx.fillText('L   Target Line   R', x2px(0), padT - 8);
+
+  // Scatter
+  ctx.fillStyle = '#e5e7eb';
+  for (const p of pts){
+    const px = x2px(p.x), py = y2px(p.y);
+    ctx.beginPath(); ctx.arc(px, py, 3.5, 0, Math.PI*2); ctx.fill();
+  }
+
+  // Mean + 2σ ellipse
+  if (pts.length >= 3){
+    const meanX = pts.reduce((t,p)=>t+p.x,0)/pts.length;
+    const meanY = pts.reduce((t,p)=>t+p.y,0)/pts.length;
+
+    let sxx=0, syy=0, sxy=0;
+    for (const p of pts){ const dx=p.x-meanX, dy=p.y-meanY; sxx+=dx*dx; syy+=dy*dy; sxy+=dx*dy; }
+    sxx/=(pts.length-1); syy/=(pts.length-1); sxy/=(pts.length-1);
+
+    const tr = sxx + syy, det = sxx*syy - sxy*sxy;
+    const disc = Math.max(0, tr*tr - 4*det);
+    const lam1 = 0.5*(tr + Math.sqrt(disc));
+    const lam2 = 0.5*(tr - Math.sqrt(disc));
+    const angle = 0.5*Math.atan2(2*sxy, sxx - syy);
+
+    const k = 2.0; // 2σ
+    const rx = Math.sqrt(Math.max(lam1, 0)) * k;
+    const ry = Math.sqrt(Math.max(lam2, 0)) * k;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+    ctx.lineWidth = 2;
+    ctx.translate(x2px(meanX), y2px(meanY));
+    ctx.rotate(-angle);
+    ctx.beginPath();
+    const steps = 80;
+    for (let i=0;i<=steps;i++){
+      const t = (i/steps) * Math.PI*2;
+      const X = rx * Math.cos(t), Y = ry * Math.sin(t);
+      const px = x2px(meanX + X) - x2px(meanX);
+      const py = y2px(meanY + Y) - y2px(meanY);
+      if (i===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 1.5;
+    const mx = x2px(meanX), my = y2px(meanY);
+    ctx.beginPath(); ctx.moveTo(mx-6, my); ctx.lineTo(mx+6, my); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(mx, my-6); ctx.lineTo(mx, my+6); ctx.stroke();
+
+    const lrMeanText = (!Number.isFinite(meanX) || meanX === 0) ? '0' : (meanX<0?`${Math.round(-meanX)}L`:`${Math.round(meanX)}R`);
+    const meta = document.getElementById('dispMeta');
+    if (meta) meta.textContent = `${pts.length} shots — Mean: ${lrMeanText}, ${meanY.toFixed(1)} yd • 2σ ellipse shown`;
+  } else {
+    const meta = document.getElementById('dispMeta');
+    if (meta) meta.textContent = pts.length ? `${pts.length} shots — add a few more for ellipse` : 'No shots';
+  }
+}
 
 
 </script>
@@ -2713,7 +2955,15 @@ clickStatus.textContent = 'TARGET';
 
     <div id="clubSummary" class="row">
       <table>
-        <thead><tr><th>Club</th><th>Shots</th><th>Avg Total (yd)</th></tr></thead>
+       <thead>
+  <tr>
+    <th>Club</th>
+    <th>Shots</th>
+    <th>Avg Total (yd)</th>
+    <th>Avg L/R</th>
+  </tr>
+</thead>
+
         <tbody id="clubSummaryBody"></tbody>
       </table>
     </div>
@@ -2724,6 +2974,17 @@ clickStatus.textContent = 'TARGET';
       <button id="resetClub" type="button" title="Clear saved club data (shots log only)">Reset Data</button>
       <button id="closeClub" type="button">Close</button>
     </div>
+  </div>
+</div>
+<!-- Dispersion Modal -->
+<div id="dispBackdrop" style="display:none; position:fixed; inset:0; background:rgba(3,10,20,0.55); z-index:10001; align-items:center; justify-content:center;">
+  <div id="dispModal" class="card" style="width:min(720px,92vw);">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
+      <h3 id="dispTitle" style="margin:0;font-size:16px">Shot Dispersion</h3>
+      <button id="dispClose" type="button" style="border:1px solid #223045;background:#0a1422;color:var(--ink);border-radius:10px;padding:6px 10px;cursor:pointer">Close</button>
+    </div>
+    <canvas id="dispCanvas" width="680" height="420" style="width:100%;height:auto;border:1px solid #1f2b3e;border-radius:12px;background:#0b1320"></canvas>
+    <div id="dispMeta" class="muted" style="margin-top:6px;font-size:12px"></div>
   </div>
 </div>
 
