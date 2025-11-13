@@ -348,6 +348,31 @@ canvas{display:block;width:100%;height:auto;background:#000;border-radius:14px;b
 .yardage-row input {
   width: 100%;
 }
+/* --- Club Data modal: scrollable on small screens --- */
+#clubBackdrop {
+  position: fixed;        /* full-screen overlay */
+  inset: 0;
+  /* your JS is already toggling display on/off, so we don't touch that */
+  display: none;          /* default state – shown via JS */
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* The actual Club Data window */
+#clubModal {
+  max-height: 85vh;                 /* never taller than the viewport */
+  overflow-y: auto;                 /* scroll inside the panel */
+  -webkit-overflow-scrolling: touch;/* smooth scroll on iOS */
+}
+
+/* Keep the Reset / Close buttons reachable */
+#clubModal .actions {
+  position: sticky;
+  bottom: 0;
+  background: rgba(11, 17, 32, 0.95);  /* match your dark panel colour */
+  padding-top: 6px;
+}
 
 
 </style>
@@ -838,6 +863,11 @@ function baseCourseName(name){
  * - Works whether the CSV numbers the back nine as 10–18 OR as 1–9.
  * - If it’s 1–9 on "(Back 9)", we offset those to holes 10–18.
  */
+  function isWedgePracticeHole(){
+  // Only change behaviour when the selected course's base name is "Wedge Practice"
+  return baseCourseName(currentCourse).toLowerCase() === 'wedge practice';
+}
+
   function slugifyCourseName(name){
   return baseCourseName(name)
     .toLowerCase()
@@ -2292,8 +2322,13 @@ drawTargetDistanceBadges();
 (function previewNext(){
   if (!tee || !pin) return;
 
-  // Start point = tee for first shot, else last landing
-  const start = (shots.length > 0) ? shots[shots.length-1] : tee;
+  // Start point:
+// - Normal holes: first from tee, later from last landing
+// - Wedge practice: ALWAYS from tee (range-style)
+const start = (shots.length > 0 && !isWedgePracticeHole())
+  ? shots[shots.length-1]
+  : tee;
+
 
   // Need a target to preview
   if (!target) return;
@@ -2377,20 +2412,29 @@ if (Number.isFinite(latRaw)) {
   ctx.restore();
 })();
 
-// ---- Actual shots (polyline chaining) ----
-let p0 = tee; // first segment starts at tee, then chains from last landing
-for (const s of shots) {
-  if (p0) {
-    ctx.strokeStyle = s.color;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(p0.x, p0.y);
-    ctx.lineTo(s.x, s.y);
-    ctx.stroke();
+// ---- Actual shots ----
+if (isWedgePracticeHole()) {
+  // Range mode: only show landing dots, no chained lines
+  for (const s of shots) {
+    drawDot(s.x, s.y, s.color, 4); // slightly smaller dot looks nice
   }
-  drawDot(s.x, s.y, s.color, 5);
-  p0 = s; // next segment starts where this one landed
+} else {
+  // Normal mode: chained polylines from tee → each landing
+  let p0 = tee; // first segment starts at tee, then chains from last landing
+  for (const s of shots) {
+    if (p0) {
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(s.x, s.y);
+      ctx.stroke();
+    }
+    drawDot(s.x, s.y, s.color, 5);
+    p0 = s; // next segment starts where this one landed
+  }
 }
+
 
 
   }
@@ -2712,10 +2756,12 @@ if (Number.isFinite(latRaw)) {
     const x_yd = Math.sqrt(Math.max(R*R - y_yd*y_yd, 0));
     const final_angle_deg = (R>0) ? (Math.asin(y_yd/R)*180/Math.PI) : 0;
 
-    // Start from tee for the first shot, otherwise from the last landing
-const start = (shots.length > 0)
+   // Start from tee for the first shot, otherwise from last landing,
+// EXCEPT on Wedge Practice where every shot starts from the tee (range-style)
+const start = (shots.length > 0 && !isWedgePracticeHole())
   ? { x: shots[shots.length-1].x, y: shots[shots.length-1].y }
   : tee;
+
 
 // Basis from START toward the TARGET point (aim axis)
 const ex = unitVec(start, target);
